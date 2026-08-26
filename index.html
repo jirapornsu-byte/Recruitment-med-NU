@@ -749,37 +749,13 @@
         <div>
           <div class="status-tag tag-teal" style="margin-bottom:6px;">ผู้สมัคร</div>
           <div style="font-size:21px;font-weight:700;" id="resName">---</div>
-          <div style="font-size:15px;color:var(--muted);margin-top:2px;" id="resPosition">---</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="resAppCount"></div>
         </div>
         <i class="fa-solid fa-circle-user" style="font-size:38px;color:var(--teal);opacity:.5;flex-shrink:0;"></i>
       </div>
 
-      <div class="card" style="margin-top:12px;">
-        <div class="card-body" style="padding:16px 20px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div>
-              <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">สถานะการพิจารณา</div>
-              <div style="font-size:17px;font-weight:700;color:var(--teal);margin-top:3px;" id="resStatus">---</div>
-            </div>
-            <div>
-              <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">กำหนดการสอบ</div>
-              <div style="font-size:16px;font-weight:600;margin-top:3px;" id="resExamDate">---</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="urlSection" style="display:none;margin-top:12px;">
-        <a id="resUrlBtn" href="#" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;">
-          <i class="fa-solid fa-file-pdf"></i> คลิกดูประกาศผลการพิจารณา
-        </a>
-      </div>
-
-      <div id="missingDocsSection" style="display:none;margin-top:12px;" class="missing-docs-box">
-        <div class="mdtitle"><i class="fa-solid fa-triangle-exclamation"></i> เอกสารยังไม่ครบถ้วน</div>
-        <ul id="missingDocsList"></ul>
-        <p id="missingDocsDeadline" class="deadline"></p>
-      </div>
+      <!-- หนึ่งการ์ดต่อหนึ่งตำแหน่งที่สมัคร (คนหนึ่งอาจสมัครได้หลายตำแหน่ง) -->
+      <div id="applicationsContainer"></div>
 
       <div class="card card-body" style="margin-top:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:14px;">
@@ -832,6 +808,7 @@
       </div>
 
       <div id="staffResult" style="display:none;">
+        <div id="staffPositionPicker"></div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px;">
           <button onclick="printApplication()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF</button>
         </div>
@@ -1180,23 +1157,7 @@ function searchStatus(){
       btn.disabled=false;
       if(res.success){
         currentSearchId=id;
-        document.getElementById('resName').innerText=res.name;
-        document.getElementById('resPosition').innerText=res.position;
-        document.getElementById('resStatus').innerText=res.status;
-        document.getElementById('resExamDate').innerText=res.examDate;
-        const urlSec=document.getElementById('urlSection');
-        if(res.announcementUrl){ document.getElementById('resUrlBtn').href=res.announcementUrl; urlSec.style.display='block'; }
-        else urlSec.style.display='none';
-        if(res.missingDocs&&res.missingDocs.length>0){
-          document.getElementById('missingDocsList').innerHTML=res.missingDocs.map(d=>`<li>${d}</li>`).join('');
-          document.getElementById('missingDocsDeadline').innerText=res.documentDeadline?`📅 กรุณานำส่งเอกสารเพิ่มเติมภายในวันที่ ${res.documentDeadline}`:'';
-          document.getElementById('missingDocsSection').style.display='block';
-          Swal.fire({
-            icon:'warning',title:'เอกสารยังไม่ครบถ้วน',
-            html:`<div style="text-align:left;font-size:14px;"><p>กรุณาจัดเตรียมและนำส่งเอกสารต่อไปนี้เพิ่มเติม:</p><ul style="padding-left:18px;margin-top:8px;">${res.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>${res.documentDeadline?`<p style="margin-top:10px;color:#c0392b;font-weight:700;">📅 กำหนดส่งภายในวันที่ ${res.documentDeadline}</p>`:''}</div>`,
-            confirmButtonText:'รับทราบ',confirmButtonColor:'#c0392b'
-          });
-        } else document.getElementById('missingDocsSection').style.display='none';
+        renderStatusResults(res.name,res.applications);
         resetSurveyBox();
         document.getElementById('resultSection').style.display='block';
       } else {
@@ -1210,6 +1171,47 @@ function searchStatus(){
       Swal.fire({icon:'error',title:'ดึงข้อมูลไม่สำเร็จ',text:err,confirmButtonColor:'#c0392b'});
     })
     .checkStatus(id);
+}
+
+// แสดงผลลัพธ์การติดตามสถานะ — หนึ่งการ์ดต่อหนึ่งตำแหน่งที่สมัคร (คนหนึ่งสมัครได้หลายตำแหน่ง)
+function renderStatusResults(name,applications){
+  document.getElementById('resName').innerText=name;
+  document.getElementById('resAppCount').innerText = applications.length>1 ? `สมัครทั้งหมด ${applications.length} ตำแหน่ง` : '';
+
+  document.getElementById('applicationsContainer').innerHTML = applications.map(app=>`
+    <div class="card" style="margin-top:12px;">
+      <div class="card-body" style="padding:16px 20px;">
+        <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">ตำแหน่งที่สมัคร</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:12px;">${app.position}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">สถานะการพิจารณา</div>
+            <div style="font-size:17px;font-weight:700;color:var(--teal);margin-top:3px;">${app.status}</div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">กำหนดการสอบ</div>
+            <div style="font-size:16px;font-weight:600;margin-top:3px;">${app.examDate}</div>
+          </div>
+        </div>
+        ${app.announcementUrl?`<a href="${app.announcementUrl}" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;"><i class="fa-solid fa-file-pdf"></i> คลิกดูประกาศผลการพิจารณา</a>`:''}
+        ${app.missingDocs&&app.missingDocs.length>0?`
+        <div class="missing-docs-box" style="margin-top:12px;">
+          <div class="mdtitle"><i class="fa-solid fa-triangle-exclamation"></i> เอกสารยังไม่ครบถ้วน</div>
+          <ul>${app.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>
+          ${app.documentDeadline?`<p class="deadline">📅 กรุณานำส่งเอกสารเพิ่มเติมภายในวันที่ ${app.documentDeadline}</p>`:''}
+        </div>`:''}
+      </div>
+    </div>
+  `).join('');
+
+  const withMissing = applications.filter(app=>app.missingDocs&&app.missingDocs.length>0);
+  if(withMissing.length>0){
+    Swal.fire({
+      icon:'warning',title:'เอกสารยังไม่ครบถ้วน',
+      html:`<div style="text-align:left;font-size:14px;">${withMissing.map(app=>`<p><b>${app.position}:</b></p><ul style="padding-left:18px;margin-bottom:8px;">${app.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>${app.documentDeadline?`<p style="color:#c0392b;font-weight:700;">📅 กำหนดส่งภายในวันที่ ${app.documentDeadline}</p>`:''}`).join('')}</div>`,
+      confirmButtonText:'รับทราบ',confirmButtonColor:'#c0392b'
+    });
+  }
 }
 
 function submitSurvey(){
@@ -1254,7 +1256,12 @@ function staffSearch(){
     .withSuccessHandler(res=>{
       btn.innerHTML='<i class="fa-solid fa-search"></i> ค้นหา';
       btn.disabled=false;
-      if(res.success){ renderStaffData(res); document.getElementById('staffResult').style.display='block'; }
+      if(res.success){
+        window.__staffApplications=res.applications;
+        renderStaffPositionPicker(res.applications);
+        renderStaffData(res.applications[0]);
+        document.getElementById('staffResult').style.display='block';
+      }
       else Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'});
     })
     .withFailureHandler(err=>{
@@ -1263,6 +1270,22 @@ function staffSearch(){
       Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
     })
     .getApplicantData(id);
+}
+
+// ถ้าเลขบัตรนี้สมัครมากกว่า 1 ตำแหน่ง ให้แสดง dropdown ให้เจ้าหน้าที่เลือกดูทีละใบสมัคร
+function renderStaffPositionPicker(applications){
+  const picker=document.getElementById('staffPositionPicker');
+  if(applications.length<=1){ picker.style.display='none'; picker.innerHTML=''; return; }
+  picker.style.display='block';
+  picker.innerHTML=`
+    <div class="card card-body" style="margin-bottom:14px;">
+      <div class="field" style="margin:0;">
+        <label>ผู้สมัครนี้สมัครทั้งหมด ${applications.length} ตำแหน่ง — เลือกใบสมัครที่ต้องการดู/พิมพ์</label>
+        <select onchange="renderStaffData(window.__staffApplications[this.value])">
+          ${applications.map((a,i)=>`<option value="${i}">${a.position}${a.department?(' — '+a.department):''}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
 }
 
 function renderStaffData(d){

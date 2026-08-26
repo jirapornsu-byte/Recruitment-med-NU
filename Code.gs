@@ -36,12 +36,15 @@ function submitApplication(appData) {
       return { success: false, message: 'เลขประจำตัวประชาชนไม่ถูกต้อง ต้องมี 13 หลัก' };
     }
 
-    // ตรวจสอบว่าเคยสมัครไปหรือยัง (เช็คคอลัมน์ A)
+    // ตรวจสอบว่าเคยสมัคร "ตำแหน่งเดียวกันนี้" ไปแล้วหรือยัง (เช็คคอลัมน์ A + B)
+    // หมายเหตุ: 1 คนสามารถสมัครได้หลายตำแหน่ง แต่ห้ามสมัครตำแหน่งเดิมซ้ำ
+    var newPosition = appData.position ? appData.position.toString().trim() : '';
     for (var i = 1; i < data.length; i++) {
       if (!data[i][0]) continue;
       var sheetId = data[i][0].toString().replace(/[^0-9]/g, '').trim();
-      if (sheetId === idClean) {
-        return { success: false, message: 'เลขประจำตัวประชาชนนี้เคยส่งใบสมัครในระบบแล้ว ไม่สามารถส่งซ้ำได้' };
+      var sheetPosition = data[i][1] ? data[i][1].toString().trim() : '';
+      if (sheetId === idClean && sheetPosition === newPosition) {
+        return { success: false, message: 'เลขประจำตัวประชาชนนี้เคยส่งใบสมัครตำแหน่ง "' + newPosition + '" ไปแล้ว ไม่สามารถส่งซ้ำได้ (สามารถสมัครตำแหน่งอื่นเพิ่มเติมได้)' };
       }
     }
 
@@ -207,6 +210,8 @@ function submitApplication(appData) {
 }
 
 // 🔍 ฟังก์ชันค้นหาสถานะผู้สมัคร
+// หมายเหตุ: 1 คนอาจสมัครได้หลายตำแหน่ง จึงคืนค่าเป็น "รายการ" (applications)
+// หนึ่งรายการต่อหนึ่งตำแหน่งที่สมัคร แทนที่จะเป็นผลลัพธ์เดียว
 function checkStatus(citizenId) {
   if (!citizenId) {
     return { success: false, message: '❌ ไม่พบข้อมูลการค้นหา' };
@@ -218,79 +223,85 @@ function checkStatus(citizenId) {
     return { success: false, message: '❌ รูปแบบเลขประจำตัวประชาชนไม่ถูกต้อง' };
   }
 
-  // ชั้นที่ 1: ค้นหาจากบอร์ดอัปเดตสถานะของ HR (Applicants)
-  // คอลัมน์: A=เลขบัตร, B=ชื่อ, C=ตำแหน่ง, D=สถานะ, E=กำหนดการสอบ, F=ลิงก์ประกาศ,
-  //          G=เอกสารที่ขาด (กรอกโดย HR, คั่นด้วยจุลภาค), H=กำหนดส่งเอกสารเพิ่มภายในวันที่
-  var appSheet = ss.getSheetByName('Applicants');
-  if (appSheet) {
-    var appData = appSheet.getDataRange().getValues();
-    for (var i = 1; i < appData.length; i++) {
-      if (!appData[i][0]) continue;
-      var sheetId = appData[i][0].toString().replace(/[^0-9]/g, '').trim();
-
-      if (sheetId === idClean) {
-        var formattedExamDate = formatThaiDate(appData[i][4]);
-
-        var missingDocsRaw = appData[i][6] ? appData[i][6].toString().trim() : '';
-        var missingDocsList = missingDocsRaw ? missingDocsRaw.split(',').map(function(s){ return s.trim(); }).filter(function(s){ return s; }) : [];
-        var deadlineRaw = appData[i][7];
-        var deadlineText = deadlineRaw ? formatThaiDate(deadlineRaw) : '';
-
-        return {
-          success: true,
-          name: appData[i][1] ? appData[i][1].toString() : 'ไม่ระบุชื่อ',
-          position: appData[i][2] ? appData[i][2].toString() : 'ไม่ระบุตำแหน่ง',
-          status: appData[i][3] ? appData[i][3].toString() : 'กำลังประมวลผล',
-          examDate: formattedExamDate,
-          announcementUrl: appData[i][5] ? appData[i][5].toString().trim() : '',
-          missingDocs: missingDocsList,
-          documentDeadline: deadlineText
-        };
-      }
-    }
-  }
-
-  // ชั้นที่ 2: ถ้าในบอร์ด HR ยังไม่มี ให้ไปค้นหาในไฟล์ดิบ "ส่งใบสมัคร"
+  // ค้นหาทุกตำแหน่งที่เคยสมัครจากไฟล์ดิบ "ส่งใบสมัคร" (ต้นทางของทุกใบสมัคร)
   var regSheet = ss.getSheetByName('ส่งใบสมัคร');
+  var regRows = [];
   if (regSheet) {
     var regData = regSheet.getDataRange().getValues();
     for (var j = 1; j < regData.length; j++) {
       if (!regData[j][0]) continue;
       var regId = regData[j][0].toString().replace(/[^0-9]/g, '').trim();
-
-      if (regId === idClean) {
-        // ตรวจสอบเอกสารบังคับที่อัปโหลดไม่สำเร็จหรือไม่ได้แนบ (ตรวจอัตโนมัติจากข้อมูลตอนสมัคร)
-        var docChecks = [
-          { idx: 88, label: 'สำเนาระเบียนแสดงผลการศึกษา (Transcript)' },
-          { idx: 89, label: 'สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา' },
-          { idx: 91, label: 'สำเนาบัตรประจำตัวประชาชน' },
-          { idx: 92, label: 'สำเนาทะเบียนบ้าน' },
-          { idx: 94, label: 'ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม' },
-          { idx: 96, label: 'รูปถ่าย 1 นิ้ว' }
-        ];
-        var autoMissing = [];
-        docChecks.forEach(function(d) {
-          var val = regData[j][d.idx] ? regData[j][d.idx].toString() : '';
-          if (val === 'ไม่ได้แนบเอกสาร' || val === 'อัปโหลดไม่สำเร็จ' || val === '') {
-            autoMissing.push(d.label);
-          }
-        });
-
-        return {
-          success: true,
-          name: regData[j][4] ? regData[j][4].toString() : 'ไม่ระบุชื่อ',
-          position: regData[j][1] ? regData[j][1].toString() : 'ไม่ระบุตำแหน่ง',
-          status: '⏳ ได้รับข้อมูลใบสมัครแล้ว (อยู่ระหว่างตรวจสอบเอกสาร)',
-          examDate: 'จะประกาศกำหนดการสอบให้ทราบในขั้นตอนถัดไป',
-          announcementUrl: '',
-          missingDocs: autoMissing,
-          documentDeadline: ''
-        };
-      }
+      if (regId === idClean) regRows.push(regData[j]);
     }
   }
 
-  return { success: false, message: '❌ ไม่พบข้อมูลการสมัครงานในระบบ กรุณาไปที่แท็บ "ส่งใบสมัคร" เพื่อลงทะเบียนก่อนใช้งานระบบติดตามสถานะ' };
+  if (!regRows.length) {
+    return { success: false, message: '❌ ไม่พบข้อมูลการสมัครงานในระบบ กรุณาไปที่แท็บ "ส่งใบสมัคร" เพื่อลงทะเบียนก่อนใช้งานระบบติดตามสถานะ' };
+  }
+
+  // บอร์ดอัปเดตสถานะของ HR (Applicants) — ใช้เทียบทีละตำแหน่งกับที่สมัครไว้
+  // คอลัมน์: A=เลขบัตร, B=ชื่อ, C=ตำแหน่ง, D=สถานะ, E=กำหนดการสอบ, F=ลิงก์ประกาศ,
+  //          G=เอกสารที่ขาด (กรอกโดย HR, คั่นด้วยจุลภาค), H=กำหนดส่งเอกสารเพิ่มภายในวันที่
+  var appSheet = ss.getSheetByName('Applicants');
+  var appData = appSheet ? appSheet.getDataRange().getValues() : [];
+
+  var docChecks = [
+    { idx: 88, label: 'สำเนาระเบียนแสดงผลการศึกษา (Transcript)' },
+    { idx: 89, label: 'สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา' },
+    { idx: 91, label: 'สำเนาบัตรประจำตัวประชาชน' },
+    { idx: 92, label: 'สำเนาทะเบียนบ้าน' },
+    { idx: 94, label: 'ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม' },
+    { idx: 96, label: 'รูปถ่าย 1 นิ้ว' }
+  ];
+
+  var applications = regRows.map(function(regRow) {
+    var position = regRow[1] ? regRow[1].toString().trim() : 'ไม่ระบุตำแหน่ง';
+
+    // หา row ที่ตรงกันทั้งเลขบัตรและตำแหน่งในบอร์ดของ HR
+    var hrRow = null;
+    for (var i = 1; i < appData.length; i++) {
+      if (!appData[i][0]) continue;
+      var aid = appData[i][0].toString().replace(/[^0-9]/g, '').trim();
+      var apos = appData[i][2] ? appData[i][2].toString().trim() : '';
+      if (aid === idClean && apos === position) { hrRow = appData[i]; break; }
+    }
+
+    if (hrRow) {
+      var missingDocsRaw = hrRow[6] ? hrRow[6].toString().trim() : '';
+      var missingDocsList = missingDocsRaw ? missingDocsRaw.split(',').map(function(s){ return s.trim(); }).filter(function(s){ return s; }) : [];
+      return {
+        position: position,
+        status: hrRow[3] ? hrRow[3].toString() : 'กำลังประมวลผล',
+        examDate: formatThaiDate(hrRow[4]),
+        announcementUrl: hrRow[5] ? hrRow[5].toString().trim() : '',
+        missingDocs: missingDocsList,
+        documentDeadline: hrRow[7] ? formatThaiDate(hrRow[7]) : ''
+      };
+    }
+
+    // ยังไม่มีในบอร์ดของ HR — ตรวจเอกสารบังคับอัตโนมัติจากข้อมูลตอนสมัคร
+    var autoMissing = [];
+    docChecks.forEach(function(d) {
+      var val = regRow[d.idx] ? regRow[d.idx].toString() : '';
+      if (val === 'ไม่ได้แนบเอกสาร' || val === 'อัปโหลดไม่สำเร็จ' || val === '') {
+        autoMissing.push(d.label);
+      }
+    });
+    return {
+      position: position,
+      status: '⏳ ได้รับข้อมูลใบสมัครแล้ว (อยู่ระหว่างตรวจสอบเอกสาร)',
+      examDate: 'จะประกาศกำหนดการสอบให้ทราบในขั้นตอนถัดไป',
+      announcementUrl: '',
+      missingDocs: autoMissing,
+      documentDeadline: ''
+    };
+  });
+
+  return {
+    success: true,
+    name: regRows[0][4] ? regRows[0][4].toString() : 'ไม่ระบุชื่อ',
+    applications: applications
+  };
 }
 
 // 🛠️ ฟังก์ชันเสริม (Helper Function)
@@ -351,6 +362,8 @@ function forceAuth() {
 
 // 👨‍💼 ฟังก์ชันดึงข้อมูลผู้สมัครสำหรับเจ้าหน้าที่ (Staff Panel)
 // คืนข้อมูลทุกฟิลด์จากชีต "ส่งใบสมัคร" ตามเลขประจำตัวประชาชน
+// หมายเหตุ: 1 คนอาจสมัครได้หลายตำแหน่ง จึงคืนค่าเป็น "รายการ" (applications)
+// หนึ่งรายการต่อหนึ่งใบสมัคร (หนึ่งตำแหน่ง) แทนที่จะเป็นผลลัพธ์เดียว
 function getApplicantData(citizenId) {
   if (!citizenId) return { success: false, message: '❌ ไม่พบข้อมูลการค้นหา' };
   var idClean = citizenId.toString().replace(/[^0-9]/g, '').trim();
@@ -361,6 +374,7 @@ function getApplicantData(citizenId) {
   if (!sheet) return { success: false, message: 'ไม่พบชีต "ส่งใบสมัคร"' };
 
   var data = sheet.getDataRange().getValues();
+  var applications = [];
   for (var i = 1; i < data.length; i++) {
     if (!data[i][0]) continue;
     var rowId = data[i][0].toString().replace(/[^0-9]/g, '').trim();
@@ -397,8 +411,7 @@ function getApplicantData(citizenId) {
     // 102=readiness, 103=readinessDate, 104=readinessOther,
     // 105=timestamp
 
-    return {
-      success: true,
+    applications.push({
       citizenId:       r[0]  ? r[0].toString().replace(/[^0-9]/g,'') : '',
       position:        r[1]  || '', department:    r[2]  || '',
       title:           r[3]  || '', name:          r[4]  || '', nickname:      r[5]  || '', nameEN:        r[6]  || '',
@@ -434,7 +447,11 @@ function getApplicantData(citizenId) {
       nameChangeUrl:   r[93] || '', medicalUrl:    r[94] || '', photoUrl:      r[96] || '',
       prevApplied:     r[99] || '',
       readiness:       r[102] || '', readinessDate: r[103] || ''
-    };
+    });
   }
-  return { success: false, message: '❌ ไม่พบข้อมูลผู้สมัครที่มีเลขประจำตัวประชาชนนี้ในระบบ' };
+
+  if (!applications.length) {
+    return { success: false, message: '❌ ไม่พบข้อมูลผู้สมัครที่มีเลขประจำตัวประชาชนนี้ในระบบ' };
+  }
+  return { success: true, applications: applications };
 }
