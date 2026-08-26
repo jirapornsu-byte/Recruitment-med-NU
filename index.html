@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบรับสมัครงาน — คณะแพทยศาสตร์ มน.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root {
+      --blue: #1552a0;
+      --blue-light: #e8f0fc;
+      --teal: #0d7a6e;
+      --teal-light: #e6f4f2;
+      --bg: #f2f4f7;
+      --card: #ffffff;
+      --border: #d8dfe8;
+      --text: #1a2332;
+      --muted: #5b6b82;
+      --danger: #c0392b;
+      --danger-light: #fdf0ef;
+      --success: #15803d;
+      --success-light: #edfaef;
+      --warning: #b45309;
+      --warning-light: #fef8ec;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Prompt', sans-serif; background: var(--bg); color: var(--text); font-size: 18px; line-height: 1.75; }
+    a { color: var(--blue); text-decoration: none; }
+
+    /* ---------- TOP HEADER ---------- */
+    .site-header {
+      background: var(--blue);
+      color: #fff;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 70px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .site-header img { height: 52px; object-fit: contain; }
+    .site-header-text h1 { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+    .site-header-text p { font-size: 13px; opacity: .7; font-weight: 300; }
+
+    /* ---------- LAYOUT ---------- */
+    .page-wrap { max-width: 900px; margin: 0 auto; padding: 28px 16px 60px; }
+
+    /* ---------- TAB NAV ---------- */
+    .tab-nav { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+    .tab-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 13px 26px; font-size: 17px; font-weight: 500;
+      color: var(--muted); background: none; border: none; cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+      font-family: 'Prompt', sans-serif;
+    }
+    .tab-btn:hover { color: var(--blue); }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+    .tab-btn .tab-icon { width: 18px; text-align: center; }
+
+    /* ---------- CARD ---------- */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .card-body { padding: 28px; }
+    .card + .card { margin-top: 16px; }
+
+    /* ---------- SECTION HEADER ---------- */
+    .section-title {
+      font-size: 16px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--blue);
+      display: flex; align-items: center; gap: 8px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .section-title .num {
+      background: var(--blue); color: #fff;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .sub-label { font-size: 16px; font-weight: 600; color: var(--text); margin: 18px 0 10px; }
+
+    /* ---------- FORM ELEMENTS ---------- */
+    .form-grid { display: grid; gap: 14px; }
+    .col-2 { grid-template-columns: 1fr 1fr; }
+    .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .col-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    @media(max-width:640px) { .col-2, .col-3, .col-4 { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:480px) { .col-2, .col-3, .col-4 { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block; font-size: 15px; font-weight: 600;
+      color: var(--muted); margin-bottom: 6px; letter-spacing: .02em;
+    }
+    .field label .req { color: var(--danger); margin-left: 2px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 11px 14px; font-size: 17px; font-family: 'Prompt', sans-serif;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: #fafbfc; color: var(--text);
+      font-size: 16px;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--blue); background: #fff;
+      box-shadow: 0 0 0 3px rgba(21,82,160,.1);
+    }
+    .field input[type="file"] { padding: 6px 8px; background: #fff; }
+    .field textarea { resize: vertical; }
+    .field input:disabled, .field input[disabled] { background: #f0f2f5; color: #9aa3b0; cursor: not-allowed; }
+
+    .inline-check { display: flex; align-items: center; gap: 8px; }
+    .inline-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); }
+    .inline-check label { font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; }
+
+    /* ---------- PROGRESS WIZARD ---------- */
+    .wizard-progress { margin-bottom: 24px; }
+    .wizard-steps-row { display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+    .wizard-step-dot {
+      display: flex; flex-direction: column; align-items: center; min-width: 80px;
+      position: relative; flex: 1;
+    }
+    .wizard-step-dot:not(:last-child)::after {
+      content: ''; position: absolute; top: 14px; left: 50%; right: -50%;
+      height: 2px; background: var(--border); z-index: 0;
+    }
+    .wizard-step-dot.done::after { background: var(--blue); }
+    .step-circle {
+      width: 30px; height: 30px; border-radius: 50%; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      border: 2px solid var(--border); background: #fff; color: var(--muted);
+      transition: all .2s;
+    }
+    .wizard-step-dot.done .step-circle { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .wizard-step-dot.active .step-circle { background: var(--blue); border-color: var(--blue); color: #fff; box-shadow: 0 0 0 4px rgba(21,82,160,.15); }
+    .step-label { font-size: 13px; color: var(--muted); text-align: center; margin-top: 5px; max-width: 72px; line-height: 1.3; }
+    .wizard-step-dot.active .step-label { color: var(--blue); font-weight: 600; }
+    .wizard-progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+    .wizard-progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .3s ease; }
+
+    /* ---------- BUTTONS ---------- */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 12px 24px; border-radius: 7px; font-size: 17px; font-weight: 600; font-family: 'Prompt', sans-serif; cursor: pointer; border: none; transition: background .15s, box-shadow .15s, transform .1s; }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #1044878; box-shadow: 0 2px 8px rgba(21,82,160,.3); }
+    .btn-secondary { background: #f0f2f5; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #e5e8ef; }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-teal:hover { background: #0a6459; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-warning { background: #f59e0b; color: #fff; }
+    .btn-lg { padding: 15px 32px; font-size: 18px; width: 100%; justify-content: center; }
+    .btn-icon { padding: 8px 12px; }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .nav-row { display: flex; gap: 10px; margin-top: 24px; }
+    .nav-row .btn { flex: 1; }
+
+    /* ---------- STATUS CARD ---------- */
+    .status-card { padding: 18px 20px; border-radius: var(--radius); border: 1px solid; }
+    .status-info { background: var(--teal-light); border-color: #a7d8d4; }
+    .status-warning { background: var(--warning-light); border-color: #fcd17a; }
+    .status-danger { background: var(--danger-light); border-color: #f5b7b1; }
+    .status-success { background: var(--success-light); border-color: #a7d8b5; }
+
+    .status-tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .tag-blue { background: var(--blue-light); color: var(--blue); }
+    .tag-teal { background: var(--teal-light); color: var(--teal); }
+    .tag-orange { background: #fff3e0; color: #e65100; }
+    .tag-red { background: var(--danger-light); color: var(--danger); }
+    .tag-green { background: var(--success-light); color: var(--success); }
+
+    /* ---------- MISSING DOCS ---------- */
+    .missing-docs-box { background: var(--danger-light); border: 1px solid #f5b7b1; border-radius: var(--radius); padding: 14px 18px; }
+    .missing-docs-box .mdtitle { font-weight: 700; color: var(--danger); font-size: 14px; display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+    .missing-docs-box ul { padding-left: 18px; color: #8b2020; font-size: 16px; }
+    .missing-docs-box ul li { margin-bottom: 3px; }
+    .missing-docs-box .deadline { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--danger); }
+
+    /* ---------- STAR RATING ---------- */
+    .star-row { display: flex; gap: 6px; }
+    .star-btn { font-size: 32px; cursor: pointer; color: #d1d5db; transition: color .1s, transform .1s; background: none; border: none; }
+    .star-btn:hover, .star-btn.lit { color: #f59e0b; }
+    .star-btn:hover { transform: scale(1.15); }
+
+    /* ---------- TABLE (staff view) ---------- */
+    .info-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+    .info-table th { background: #f0f4f8; color: var(--blue); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+    .info-table td { padding: 9px 12px; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
+    .info-table tr:hover td { background: #f8fafc; }
+    .info-table td:first-child { color: var(--muted); font-size: 14px; font-weight: 500; width: 200px; }
+    .info-table td:last-child { font-weight: 500; }
+
+    /* ---------- LOADING OVERLAY ---------- */
+    .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(26,35,50,.7); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+    .loading-overlay.show { display: flex; }
+    .loading-spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #fff; font-size: 15px; font-weight: 500; }
+
+
+    /* ---------- WIZARD SIDEBAR LAYOUT ---------- */
+    .wizard-layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; align-items: start; }
+    .wizard-sidebar {
+      position: sticky; top: 78px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .sidebar-header {
+      background: var(--blue); color: #fff;
+      padding: 13px 18px; font-size: 13px; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+    }
+    .sidebar-step {
+      display: flex; align-items: center; gap: 13px;
+      padding: 13px 18px; border-bottom: 1px solid #f0f2f5;
+      cursor: pointer; transition: background .12s;
+      text-decoration: none;
+    }
+    .sidebar-step:last-child { border-bottom: none; }
+    .sidebar-step:hover { background: #f5f8ff; }
+    .sidebar-step.active { background: var(--blue-light); }
+    .sidebar-step.active .ss-num { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .sidebar-step.done .ss-num { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .ss-num {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      border: 2px solid var(--border); background: #fff; color: var(--muted);
+      transition: all .2s;
+    }
+    .ss-label { font-size: 14px; line-height: 1.35; color: var(--text); }
+    .sidebar-step.active .ss-label { font-weight: 700; color: var(--blue); }
+    .sidebar-step.done .ss-label { color: var(--muted); }
+
+    /* mobile progress (hidden desktop) */
+    .mobile-progress { display: none; margin-bottom: 14px; padding: 14px 18px !important; }
+    .mobile-step-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .mobile-step-info .ms-num { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .mobile-step-info .ms-title { font-size: 15px; font-weight: 700; color: var(--blue); }
+
+    @media (max-width: 768px) {
+      .wizard-layout { grid-template-columns: 1fr; gap: 0; }
+      .wizard-sidebar { display: none; }
+      .mobile-progress { display: block; }
+    }
+    @media (min-width: 769px) {
+      .mobile-progress { display: none !important; }
+    }
+    /* ---------- END SIDEBAR ---------- */
+
+    /* FIX: hidden class สำหรับ wizard steps */
+    .hidden { display: none !important; }
+
+    /* page-turn animation */
+    .wizard-step { animation: fadeSlideIn .25s ease both; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- PRINT STYLES ---------- */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
+        inset: 0 !important;
+        left: 0 !important; top: 0 !important;
+        width: 100% !important;
+        padding: 18mm 16mm;
+        font-family: 'TH Sarabun PSK', 'Prompt', sans-serif;
+        font-size: 14pt; line-height: 1.6; color: #000;
+        background: #fff;
+        z-index: 99999;
+      }
+      .print-section { margin-bottom: 14pt; }
+      .print-section-title { font-weight: bold; font-size: 13pt; border-bottom: 1px solid #333; padding-bottom: 4pt; margin-bottom: 8pt; }
+      .print-row { display: flex; gap: 24pt; margin-bottom: 5pt; flex-wrap: wrap; }
+      .print-kv { flex: 1; min-width: 140pt; }
+      .print-kv span.k { font-size: 11pt; color: #555; }
+      .print-kv span.v { font-weight: 600; display: block; }
+      .print-kv-full { width: 100%; }
+      .no-print { display: none !important; }
+      .print-header { text-align: center; margin-bottom: 18pt; }
+      .print-header h2 { font-size: 16pt; font-weight: bold; }
+      .print-header p { font-size: 13pt; }
+      table.print-table { width: 100%; border-collapse: collapse; font-size: 12pt; margin-bottom: 10pt; }
+      table.print-table th, table.print-table td { border: 1px solid #999; padding: 4pt 7pt; }
+      table.print-table th { background: #eee; font-weight: bold; }
+    }
+    #printArea {
+      position: absolute;
+      left: -99999px;
+      top: 0;
+      width: 210mm;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* ---------- MISC ---------- */
+    .swal2-popup { font-family: 'Prompt', sans-serif !important; border-radius: 14px !important; }
+    .edu-row, .exp-row, .lang-row { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; position: relative; }
+    .row-remove { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: var(--danger); color: #fff; border: none; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+    .add-row-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 15px; font-weight: 600; color: var(--blue); background: var(--blue-light); border: 1px dashed #93aed4; border-radius: 6px; padding: 5px 12px; cursor: pointer; margin-top: 8px; font-family: 'Prompt', sans-serif; }
+    .add-row-btn:hover { background: #dae6f8; }
+    .section-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .file-label { display: inline-block; background: var(--blue-light); color: var(--blue); border-radius: 5px; padding: 2px 9px; font-size: 13px; font-weight: 700; margin-right: 4px; }
+    .staff-pin-wrap { max-width: 380px; margin: 40px auto; text-align: center; }
+    .staff-pin-wrap h2 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .staff-pin-wrap p { font-size: 16px; color: var(--muted); margin-bottom: 20px; }
+    .tag-doc-ok { color: var(--success); font-size: 12px; }
+    .tag-doc-miss { color: var(--danger); font-size: 12px; font-weight: 600; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <p class="loading-text">กำลังประมวลผลข้อมูลและไฟล์แนบ...</p>
+</div>
+
+<!-- Print area (hidden until print) -->
+<div id="printArea"></div>
+
+<!-- TOP HEADER -->
+<header class="site-header">
+  <div style="background:#fff;border-radius:8px;padding:4px 6px;display:flex;align-items:center;"><img src="https://med.nu.ac.th/home/images/logo-mednu.png" alt="MED NU" onerror="this.src='https://upload.wikimedia.org/wikipedia/th/b/b2/Medicine_Naresuan.png';this.style.filter='brightness(0) invert(1)'" style="height:44px;object-fit:contain;"></div>
+  <div class="site-header-text">
+    <h1 style="font-size:19px;">ระบบรับสมัครงาน คณะแพทยศาสตร์</h1>
+    <p>Faculty of Medicine · Naresuan University</p>
+  </div>
+</header>
+
+<div class="page-wrap">
+  <!-- TAB NAV -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" id="btn-formTab" onclick="switchTab('formTab')">
+      <span class="tab-icon"><i class="fa-solid fa-file-pen"></i></span> ส่งใบสมัคร
+    </button>
+    <button class="tab-btn" id="btn-trackTab" onclick="switchTab('trackTab')">
+      <span class="tab-icon"><i class="fa-solid fa-magnifying-glass"></i></span> ติดตามสถานะ
+    </button>
+    <button class="tab-btn" id="btn-staffTab" onclick="switchTab('staffTab')">
+      <span class="tab-icon"><i class="fa-solid fa-user-shield"></i></span> สำหรับเจ้าหน้าที่
+    </button>
+  </nav>
+
+  <!-- ========== TAB: ส่งใบสมัคร ========== -->
+  <div id="content-formTab">
+    <div class="wizard-layout">
+
+      <!-- SIDEBAR (desktop) -->
+      <aside class="wizard-sidebar">
+        <div class="sidebar-header"><i class="fa-solid fa-list-check" style="margin-right:7px;"></i>ขั้นตอนการสมัคร</div>
+        <div id="sidebarSteps"></div>
+      </aside>
+
+      <!-- CONTENT -->
+      <div class="wizard-content">
+        <!-- mobile progress (hidden desktop) -->
+        <div class="mobile-progress card card-body">
+          <div class="mobile-step-info">
+            <span class="ms-num" id="mobileStepNum">ขั้นตอนที่ 1 จาก 7</span>
+            <span class="ms-title" id="mobileStepTitle">ข้อมูลการสมัคร</span>
+          </div>
+          <div class="wizard-progress-bar">
+            <div class="wizard-progress-fill" id="progressBarFill" style="width:14%"></div>
+          </div>
+        </div>
+
+        <form id="appForm" class="space-y-0">
+
+      <!-- STEP 1: ข้อมูลการสมัคร + ประวัติส่วนตัว -->
+      <div class="wizard-step" data-step="1" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num"></span> ข้อมูลการสมัคร</div>
+          <div class="form-grid col-2">
+            <div class="field"><label>ตำแหน่งที่สมัคร<span class="req">*</span></label><input type="text" id="formPosition" required></div>
+            <div class="field"><label>หน่วยงาน<span class="req">*</span></label><input type="text" id="formDepartment" required></div>
+          </div>
+        </div>
+
+        <div class="card card-body" style="margin-top:16px;">
+          <div class="section-title"><span class="num">1</span> ประวัติส่วนตัว</div>
+          <div class="sub-label">1.1 ข้อมูลทั่วไป</div>
+          <div class="form-grid col-3">
+            <div class="field">
+              <label>คำนำหน้า<span class="req">*</span></label>
+              <select id="formTitle" required>
+                <option value="" disabled selected>เลือก</option>
+                <option>นาย</option><option>นาง</option><option>นางสาว</option><option>ยศ/อื่นๆ</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column:span 2">
+              <label>ชื่อ - นามสกุล (ภาษาไทย)<span class="req">*</span></label>
+              <input type="text" id="formName" required placeholder="ไม่ต้องใส่คำนำหน้า">
+            </div>
+            <div class="field"><label>ชื่อเล่น</label><input type="text" id="formNickname"></div>
+            <div class="field" style="grid-column:span 2">
+              <label>NAME – SURNAME (English)</label>
+              <input type="text" id="formNameEN" placeholder="MR./MISS/MRS. ...">
+            </div>
+            <div class="field" style="grid-column:span 2">
+              <label>เลขประจำตัวประชาชน 13 หลัก<span class="req">*</span></label>
+              <input type="text" id="formId" maxlength="13" required>
+            </div>
+            <div class="field">
+              <label>วัน/เดือน/ปีเกิด<span class="req">*</span></label>
+              <input type="date" id="formDob" required>
+            </div>
+          </div>
+          <div class="form-grid col-4" style="margin-top:14px;">
+            <div class="field"><label>สัญชาติ</label><input type="text" id="formNationality" value="ไทย"></div>
+            <div class="field"><label>เชื้อชาติ</label><input type="text" id="formRace" value="ไทย"></div>
+            <div class="field"><label>ศาสนา</label><input type="text" id="formReligion" value="พุทธ"></div>
+            <div class="field"><label>สถานที่เกิด (จ.)</label><input type="text" id="formBirthPlace"></div>
+            <div class="field"><label>โทรศัพท์บ้าน</label><input type="tel" id="formPhoneHome"></div>
+            <div class="field"><label>มือถือ 1<span class="req">*</span></label><input type="tel" id="formPhone" required></div>
+            <div class="field"><label>มือถือ 2</label><input type="tel" id="formPhone2"></div>
+            <div class="field"><label>E-mail<span class="req">*</span></label><input type="email" id="formEmail" required></div>
+          </div>
+
+          <div class="sub-label">1.3 ประวัติสุขภาพ</div>
+          <div class="form-grid col-4">
+            <div class="field"><label>น้ำหนัก (กก.)</label><input type="number" step=".1" id="formWeight"></div>
+            <div class="field"><label>ส่วนสูง (ซม.)</label><input type="number" step=".1" id="formHeight"></div>
+            <div class="field"><label>กรุ๊ปเลือด</label>
+              <select id="formBlood"><option value="">-</option><option>A</option><option>B</option><option>O</option><option>AB</option></select>
+            </div>
+            <div class="field"><label>โรคประจำตัว</label><input type="text" id="formDisease" placeholder="ถ้ามี"></div>
+            <div class="field"><label>สูบบุหรี่</label>
+              <select id="formSmoking"><option>ไม่สูบ</option><option>สูบ</option></select>
+            </div>
+            <div class="field"><label>ดื่มแอลกอฮอล์</label>
+              <select id="formAlcohol"><option>ไม่ดื่ม</option><option>ดื่ม</option></select>
+            </div>
+            <div class="field"><label>สถานภาพทางทหาร</label>
+              <select id="formMilitary">
+                <option value="ไม่ระบุ/หญิง">ไม่ระบุ / หญิง</option>
+                <option value="ได้รับการยกเว้น">ได้รับการยกเว้น</option>
+                <option value="ปลดเป็นทหารกองหนุน">ปลดเป็นทหารกองหนุน</option>
+                <option value="จะเข้ารับการเกณฑ์ทหาร">จะเข้ารับการเกณฑ์ทหาร</option>
+              </select>
+            </div>
+            <div class="field"><label>สถานภาพอุปสมบท</label>
+              <select id="formOrdain"><option>ไม่เกี่ยวข้อง</option><option>ผ่านการอุปสมบทแล้ว</option><option>ยังไม่ได้อุปสมบท</option></select>
+            </div>
+          </div>
+
+          <div class="sub-label">1.6 บิดา / มารดา</div>
+          <div class="section-box">
+            <div class="form-grid col-4">
+              <div class="field"><label>ชื่อบิดา</label><input type="text" id="formFatherName"></div>
+              <div class="field"><label>นามสกุลบิดา</label><input type="text" id="formFatherSurname"></div>
+              <div class="field"><label>สถานภาพบิดา</label>
+                <select id="formFatherStatus"><option>มีชีวิตอยู่</option><option>เสียชีวิต</option></select>
+              </div>
+              <div class="field"><label>อาชีพบิดา</label><input type="text" id="formFatherOccupation"></div>
+              <div class="field"><label>ชื่อมารดา</label><input type="text" id="formMotherName"></div>
+              <div class="field"><label>นามสกุลมารดา</label><input type="text" id="formMotherSurname"></div>
+              <div class="field"><label>สถานภาพมารดา</label>
+                <select id="formMotherStatus"><option>มีชีวิตอยู่</option><option>เสียชีวิต</option></select>
+              </div>
+              <div class="field"><label>อาชีพมารดา</label><input type="text" id="formMotherOccupation"></div>
+            </div>
+          </div>
+
+          <div class="sub-label">1.7 สถานภาพการสมรส</div>
+          <div class="section-box">
+            <div class="field" style="max-width:200px;">
+              <select id="formMarital" onchange="toggleSpouse()">
+                <option>โสด</option><option>สมรส</option><option>หย่า</option><option>หม้าย</option><option>แยกกันอยู่</option>
+              </select>
+            </div>
+            <div id="spouseBox" class="form-grid col-3" style="margin-top:12px;display:none;">
+              <div class="field"><label>ชื่อ-นามสกุลคู่สมรส</label><input type="text" id="formSpouseName"></div>
+              <div class="field"><label>อาชีพคู่สมรส</label><input type="text" id="formSpouseOccupation"></div>
+              <div class="field"><label>โทรศัพท์คู่สมรส</label><input type="tel" id="formSpousePhone"></div>
+            </div>
+          </div>
+
+          <div class="sub-label">1.8 บุตร</div>
+          <div class="section-box">
+            <div class="inline-check">
+              <input type="checkbox" id="formNoChildren" checked onchange="toggleChildren()">
+              <label for="formNoChildren">ไม่มีบุตร</label>
+            </div>
+            <div class="field" style="margin-top:10px;display:none;" id="childrenField">
+              <label>รายละเอียดบุตร (ชื่อ-สกุล / วันเดือนปีเกิด)</label>
+              <textarea id="formChildrenText" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="sub-label">1.9 ที่อยู่ปัจจุบัน</div>
+          <div class="form-grid col-4">
+            <div class="field"><label>บ้านเลขที่</label><input type="text" id="formAddrNo"></div>
+            <div class="field"><label>หมู่</label><input type="text" id="formAddrMoo"></div>
+            <div class="field"><label>ตรอก/ซอย</label><input type="text" id="formAddrSoi"></div>
+            <div class="field"><label>ถนน</label><input type="text" id="formAddrRoad"></div>
+            <div class="field"><label>ตำบล/แขวง</label><input type="text" id="formAddrTambon"></div>
+            <div class="field"><label>อำเภอ/เขต</label><input type="text" id="formAddrAmphoe"></div>
+            <div class="field"><label>จังหวัด</label><input type="text" id="formAddrProvince"></div>
+            <div class="field"><label>รหัสไปรษณีย์</label><input type="text" id="formAddrZip"></div>
+          </div>
+
+          <div class="sub-label">1.10 บุคคลติดต่อฉุกเฉิน</div>
+          <div class="form-grid col-3">
+            <div class="field"><label>ชื่อ-นามสกุล</label><input type="text" id="formEmgName"></div>
+            <div class="field"><label>ความสัมพันธ์</label><input type="text" id="formEmgRelation"></div>
+            <div class="field"><label>โทรศัพท์</label><input type="tel" id="formEmgPhoneMobile"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: ประวัติการศึกษา -->
+      <div class="wizard-step hidden" data-step="2" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">2</span> ประวัติการศึกษา</div>
+          <div class="sub-label">2.1 วุฒิการศึกษา (มัธยมศึกษาตอนต้น – วุฒิสูงสุด)</div>
+          <div id="eduContainer" class="space-y" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <button type="button" class="add-row-btn" onclick="addEduRow()"><i class="fa-solid fa-plus"></i> เพิ่มวุฒิการศึกษา</button>
+
+          <hr class="divider">
+          <div class="sub-label">2.2 กำลังศึกษาต่ออยู่ในปัจจุบัน</div>
+          <div class="field" style="max-width:220px;">
+            <select id="formStudying" onchange="toggleStudying()">
+              <option value="ไม่ใช่">ไม่ใช่</option><option value="ใช่">ใช่ (โปรดระบุ)</option>
+            </select>
+          </div>
+          <div id="studyingBox" style="display:none;margin-top:10px;">
+            <div class="field"><textarea id="formStudyingText" rows="2" placeholder="ระดับ / วุฒิ / สาขา / สถาบัน / ปีที่คาดว่าจะสำเร็จ"></textarea></div>
+            <div class="form-grid col-2" style="margin-top:10px;">
+              <div class="field"><label>ได้รับอนุญาตให้ลาราชการศึกษาต่อ</label>
+                <select id="formStudyLeave"><option value="">-</option><option>ใช่</option><option>ไม่ใช่</option></select>
+              </div>
+              <div class="field"><label>แหล่งทุน</label>
+                <select id="formStudyFund"><option>ใช้ทุนส่วนตัว</option><option>ได้รับทุน (ระบุ)</option></select>
+              </div>
+              <div class="field"><label>รายละเอียดทุน</label><input type="text" id="formStudyFundDetail"></div>
+            </div>
+          </div>
+
+          <hr class="divider">
+          <div class="sub-label">2.3 การฝึกอบรม / ดูงาน</div>
+          <div class="field" style="max-width:160px;">
+            <select id="formTraining" onchange="toggleTraining()"><option value="ไม่มี">ไม่มี</option><option value="มี">มี</option></select>
+          </div>
+          <div class="field" id="trainingBox" style="display:none;margin-top:10px;">
+            <textarea id="formTrainingText" rows="3" placeholder="หลักสูตร/วิชา · สถานที่/ประเทศ · ระยะเวลา (แยกแต่ละบรรทัด)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: ความรู้ความสามารถพิเศษ -->
+      <div class="wizard-step hidden" data-step="3" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">3</span> ความรู้ความสามารถพิเศษ</div>
+          <div class="sub-label">3.1 ภาษาต่างประเทศ</div>
+          <div id="langContainer" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <button type="button" class="add-row-btn" onclick="addLangRow()"><i class="fa-solid fa-plus"></i> เพิ่มภาษา</button>
+          <hr class="divider">
+          <div class="sub-label">3.2 พิมพ์ดีด (คำ/นาที)</div>
+          <div class="form-grid col-2">
+            <div class="field"><label>ภาษาไทย</label><input type="number" id="formTypeThai" placeholder="0 = พิมพ์ไม่ได้"></div>
+            <div class="field"><label>ภาษาอังกฤษ</label><input type="number" id="formTypeEng" placeholder="0 = พิมพ์ไม่ได้"></div>
+          </div>
+          <hr class="divider">
+          <div class="sub-label">3.3 คอมพิวเตอร์</div>
+          <div class="form-grid col-2">
+            <div class="field"><label>ระดับความสามารถ</label>
+              <select id="formComputer"><option>ไม่ได้</option><option>ใช้งานได้</option><option>ใช้งานได้ดี</option></select>
+            </div>
+            <div class="field"><label>โปรแกรมที่ใช้ได้</label><input type="text" id="formComputerPrograms"></div>
+          </div>
+          <hr class="divider">
+          <div class="form-grid col-2">
+            <div class="field"><label>ความรู้ความสามารถพิเศษอื่นๆ</label><textarea id="formOtherSkills" rows="2"></textarea></div>
+            <div class="field"><label>กิจกรรมยามว่าง / งานอดิเรก</label><textarea id="formHobbies" rows="2"></textarea></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: ประวัติการทำงาน -->
+      <div class="wizard-step hidden" data-step="4" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">4</span> ประวัติการทำงาน</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="sub-label" style="margin:0;">4.1 ประสบการณ์ทำงาน (เรียงจากปัจจุบันย้อนหลัง)</div>
+            <div class="inline-check">
+              <input type="checkbox" id="noExp" onchange="toggleExp()">
+              <label for="noExp" style="color:var(--danger);">ไม่มีประสบการณ์</label>
+            </div>
+          </div>
+          <div id="expContainer" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <button type="button" class="add-row-btn" onclick="addExpRow()"><i class="fa-solid fa-plus"></i> เพิ่มประสบการณ์</button>
+
+          <hr class="divider">
+          <div class="sub-label">4.2 เครื่องราชอิสริยาภรณ์</div>
+          <div class="field" style="max-width:160px;">
+            <select id="formDecoration" onchange="toggleDecoration()"><option value="ไม่มี">ไม่มี</option><option value="มี">มี</option></select>
+          </div>
+          <div class="field" id="decorationBox" style="display:none;margin-top:10px;">
+            <textarea id="formDecorationText" rows="2" placeholder="ระบุชื่อเครื่องราชฯ / ปี พ.ศ. / หน่วยงานที่เสนอ"></textarea>
+          </div>
+
+          <hr class="divider">
+          <div class="sub-label">4.3 บุคคลรับรองความประพฤติ (ไม่ใช่ญาติหรือคู่สมรส)</div>
+          <div class="form-grid col-3">
+            <div class="field"><label>ชื่อ-นามสกุล</label><input type="text" id="formRefName"></div>
+            <div class="field"><label>ความสัมพันธ์</label><input type="text" id="formRefRelation"></div>
+            <div class="field"><label>โทรศัพท์</label><input type="tel" id="formRefPhone"></div>
+          </div>
+
+          <hr class="divider">
+          <div class="sub-label">4.4 ประวัติทางวินัยและการดำเนินคดี</div>
+          <div class="section-box" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field"><label>เคยถูกลงโทษทางวินัย</label>
+              <select id="formDiscPast"><option value="ไม่เคย">ไม่เคย</option><option value="เคย">เคย (โปรดระบุด้านล่าง)</option></select>
+            </div>
+            <div class="field"><label>อยู่ระหว่างถูกสอบสวนข้อเท็จจริงทางวินัย</label>
+              <select id="formDiscInvestigate"><option value="ไม่อยู่">ไม่อยู่</option><option value="อยู่">อยู่ระหว่าง (โปรดระบุ)</option></select>
+            </div>
+            <div class="field"><label>อยู่ระหว่างถูกตั้งกรรมการสอบสวน/พิจารณาโทษ</label>
+              <select id="formDiscCommittee"><option value="ไม่อยู่">ไม่อยู่</option><option value="อยู่">อยู่ระหว่าง (โปรดระบุ)</option></select>
+            </div>
+            <div class="field"><label>อยู่ระหว่างถูกดำเนินคดี</label>
+              <select id="formLawsuit">
+                <option value="ไม่อยู่">ไม่อยู่ระหว่างถูกดำเนินคดี</option>
+                <option value="ทางแพ่ง">ทางแพ่ง</option><option value="ทางอาญา">ทางอาญา</option><option value="คดีล้มละลาย">คดีล้มละลาย</option>
+              </select>
+            </div>
+            <div class="field"><label>รายละเอียด (กรณีเลือก "เคย" หรือ "อยู่ระหว่าง" ข้อใดข้อหนึ่ง)</label>
+              <textarea id="formDiscDetail" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: ผลงาน + เงินเดือน -->
+      <div class="wizard-step hidden" data-step="5" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">5</span> ผลงานแสดงความรู้ความเชี่ยวชาญ</div>
+          <div class="field">
+            <textarea id="formSpecialWorks" rows="4" placeholder="ระบุผลงาน เกียรติบัตร โครงการ หรือความเชี่ยวชาญที่เกี่ยวข้องกับตำแหน่งที่สมัคร (ถ้ามี)"></textarea>
+          </div>
+          <hr class="divider">
+          <div class="sub-label">เงินเดือนที่ต้องการ</div>
+          <div class="field" style="max-width:220px;">
+            <label>บาท / เดือน</label>
+            <input type="number" id="formSalary">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 6: เอกสาร -->
+      <div class="wizard-step hidden" data-step="6" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">6</span> เอกสารประกอบการพิจารณา</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">รับรองสำเนาถูกต้องทุกฉบับ · รูปแบบไฟล์ PDF หรือรูปภาพ · ขนาดไม่เกินไฟล์ละ 5 MB</p>
+          <div class="form-grid col-2">
+            <div class="field"><label><span class="file-label">1</span> ใบอนุญาตประกอบวิชาชีพ (ถ้ามี)</label><input type="file" id="fileLicense" accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">2</span> สำเนาระเบียนผลการศึกษา (Transcript)<span class="req">*</span></label><input type="file" id="fileTranscript" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">3</span> สำเนาใบปริญญาบัตร / หนังสือรับรองวุฒิ<span class="req">*</span></label><input type="file" id="fileDegree" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">4</span> ใบผ่านงาน / หนังสือรับรองการทำงาน (ถ้ามี)</label><input type="file" id="fileWorkCert" accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">5</span> สำเนาบัตรประจำตัวประชาชน<span class="req">*</span></label><input type="file" id="fileIdCard" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">6</span> สำเนาทะเบียนบ้าน<span class="req">*</span></label><input type="file" id="fileHouseReg" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">7</span> หลักฐานการเปลี่ยนชื่อ-สกุล (ถ้ามี)</label><input type="file" id="fileNameChange" accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">8</span> ใบรับรองแพทย์แผนปัจจุบัน<span class="req">*</span></label><input type="file" id="fileMedical" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">9</span> สำเนาใบผ่านการเกณฑ์ทหาร (เฉพาะชาย)</label><input type="file" id="fileMilitary" accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">10</span> รูปถ่าย 1 นิ้ว<span class="req">*</span></label><input type="file" id="filePhoto" required accept=".pdf,image/*"></div>
+            <div class="field"><label><span class="file-label">11</span> เอกสารอื่นๆ (ระบุ)</label>
+              <input type="file" id="fileOther" accept=".pdf,image/*" style="margin-bottom:6px;">
+              <input type="text" id="formOtherDocDetail" placeholder="ชื่อเอกสาร">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7: ประวัติการสมัคร + ความพร้อม -->
+      <div class="wizard-step hidden" data-step="7" style="margin-top:16px;">
+        <div class="card card-body">
+          <div class="section-title"><span class="num">7</span> ประวัติการสมัคร / ความพร้อม</div>
+
+          <div class="sub-label">7. เคยสมัครเข้าทำงานในคณะแพทยศาสตร์ มน. หรือไม่</div>
+          <div class="field" style="max-width:200px;">
+            <select id="formPrevApplied" onchange="togglePrevApplied()"><option value="ไม่เคย">ไม่เคย</option><option value="เคย">เคย</option></select>
+          </div>
+          <div id="prevAppliedBox" style="display:none;margin-top:10px;">
+            <div class="form-grid col-2">
+              <div class="field"><label>สมัครครั้งนี้เป็นครั้งที่</label><input type="number" id="formPrevAppliedTimes"></div>
+            </div>
+            <div class="field" style="margin-top:10px;"><label>รายละเอียดตำแหน่งที่เคยสมัคร</label><textarea id="formPrevAppliedText" rows="2"></textarea></div>
+          </div>
+
+          <hr class="divider">
+          <div class="sub-label">8. ความพร้อมในการทำงาน (หากได้รับการคัดเลือก)</div>
+          <div class="field" style="max-width:360px;">
+            <select id="formReadiness" onchange="toggleReadiness()">
+              <option value="พร้อมทำงานทันที">พร้อมมาปฏิบัติงานได้ทันที</option>
+              <option value="มีข้อผูกพัน">มีข้อผูกพันต้องทำงานที่เดิมจนถึงวันที่...</option>
+            </select>
+          </div>
+          <input type="date" id="formReadinessDate" style="display:none;margin-top:10px;max-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-family:'Prompt',sans-serif;font-size:14px;">
+          <div class="field" style="margin-top:12px;max-width:440px;">
+            <label>หมายเหตุ / ข้อมูลเพิ่มเติม</label>
+            <input type="text" id="formReadinessOther">
+          </div>
+        </div>
+      </div>
+
+      <!-- NAV BUTTONS -->
+      <div class="nav-row">
+        <button type="button" id="btnPrev" class="btn btn-secondary" onclick="prevStep()" style="display:none;"><i class="fa-solid fa-arrow-left"></i> ย้อนกลับ</button>
+        <button type="button" id="btnNext" class="btn btn-primary" onclick="nextStep()">ถัดไป <i class="fa-solid fa-arrow-right"></i></button>
+        <button type="button" id="btnSubmitForm" class="btn btn-teal btn-lg" onclick="reviewBeforeSubmit()" style="display:none;"><i class="fa-solid fa-cloud-arrow-up"></i> ยืนยันและส่งใบสมัคร</button>
+      </div>
+    </form>
+        </form>
+      </div><!-- /wizard-content -->
+    </div><!-- /wizard-layout -->
+  </div><!-- /content-formTab -->
+
+  <!-- ========== TAB: ติดตามสถานะ ========== -->
+  <div id="content-trackTab" style="display:none;">
+    <div class="card card-body" style="max-width:480px;margin:0 auto;">
+      <div class="section-title"><span class="num"><i class="fa-solid fa-id-card" style="font-size:10px;"></i></span> ค้นหาสถานะใบสมัคร</div>
+      <div class="field">
+        <label>เลขประจำตัวประชาชน 13 หลัก</label>
+        <input type="text" id="citizenIdSearch" maxlength="13" style="text-align:center;letter-spacing:.2em;font-size:17px;font-weight:600;" placeholder="_ _ _ _ _ _ _ _ _ _ _ _ _">
+      </div>
+      <button onclick="searchStatus()" id="btnSearch" class="btn btn-primary" style="width:100%;margin-top:12px;justify-content:center;">
+        <i class="fa-solid fa-magnifying-glass"></i> ตรวจสอบสถานะ
+      </button>
+    </div>
+
+    <div id="resultSection" style="display:none;margin-top:20px;max-width:600px;margin-left:auto;margin-right:auto;">
+      <div class="card card-body status-info" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div class="status-tag tag-teal" style="margin-bottom:6px;">ผู้สมัคร</div>
+          <div style="font-size:21px;font-weight:700;" id="resName">---</div>
+          <div style="font-size:15px;color:var(--muted);margin-top:2px;" id="resPosition">---</div>
+        </div>
+        <i class="fa-solid fa-circle-user" style="font-size:38px;color:var(--teal);opacity:.5;flex-shrink:0;"></i>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="card-body" style="padding:16px 20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">สถานะการพิจารณา</div>
+              <div style="font-size:17px;font-weight:700;color:var(--teal);margin-top:3px;" id="resStatus">---</div>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">กำหนดการสอบ</div>
+              <div style="font-size:16px;font-weight:600;margin-top:3px;" id="resExamDate">---</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="urlSection" style="display:none;margin-top:12px;">
+        <a id="resUrlBtn" href="#" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;">
+          <i class="fa-solid fa-file-pdf"></i> คลิกดูประกาศผลการพิจารณา
+        </a>
+      </div>
+
+      <div id="missingDocsSection" style="display:none;margin-top:12px;" class="missing-docs-box">
+        <div class="mdtitle"><i class="fa-solid fa-triangle-exclamation"></i> เอกสารยังไม่ครบถ้วน</div>
+        <ul id="missingDocsList"></ul>
+        <p id="missingDocsDeadline" class="deadline"></p>
+      </div>
+
+      <div class="card card-body" style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:14px;">
+          <i class="fa-solid fa-star" style="color:#f59e0b;"></i> ประเมินความพึงพอใจในการใช้งานระบบ
+        </div>
+        <div id="surveyFormBox">
+          <div class="star-row" id="starRow" style="justify-content:center;margin-bottom:14px;">
+            <button type="button" class="star-btn" data-val="1">★</button>
+            <button type="button" class="star-btn" data-val="2">★</button>
+            <button type="button" class="star-btn" data-val="3">★</button>
+            <button type="button" class="star-btn" data-val="4">★</button>
+            <button type="button" class="star-btn" data-val="5">★</button>
+          </div>
+          <div class="field"><textarea id="surveyFeedback" rows="2" placeholder="ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)"></textarea></div>
+          <button type="button" onclick="submitSurvey()" id="btnSurveySubmit" class="btn btn-warning" style="width:100%;margin-top:10px;justify-content:center;">
+            <i class="fa-solid fa-paper-plane"></i> ส่งแบบประเมิน
+          </button>
+        </div>
+        <div id="surveyThanks" style="display:none;text-align:center;padding:8px 0;">
+          <i class="fa-solid fa-circle-check" style="font-size:22px;color:var(--success);"></i>
+          <p style="margin-top:6px;font-size:14px;font-weight:600;color:var(--success);">ขอบคุณสำหรับการประเมิน</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TAB: สำหรับเจ้าหน้าที่ ========== -->
+  <div id="content-staffTab" style="display:none;">
+    <div id="staffPinView" class="staff-pin-wrap">
+      <i class="fa-solid fa-user-shield" style="font-size:36px;color:var(--blue);margin-bottom:12px;"></i>
+      <h2>ระบบสำหรับเจ้าหน้าที่</h2>
+      <p>กรุณาใส่รหัสผ่านเจ้าหน้าที่เพื่อเข้าใช้งาน</p>
+      <div class="field">
+        <input type="password" id="staffPin" placeholder="รหัสผ่าน" style="text-align:center;font-size:16px;letter-spacing:.2em;" onkeydown="if(event.key==='Enter')checkPin()">
+      </div>
+      <button onclick="checkPin()" class="btn btn-primary" style="width:100%;margin-top:10px;justify-content:center;">เข้าสู่ระบบ</button>
+    </div>
+
+    <div id="staffMainView" style="display:none;">
+      <div class="card card-body" style="max-width:560px;margin:0 auto 20px;">
+        <div class="section-title"><span class="num"><i class="fa-solid fa-search" style="font-size:10px;"></i></span> ค้นหาข้อมูลผู้สมัคร</div>
+        <div style="display:flex;gap:10px;">
+          <div class="field" style="flex:1;margin:0;">
+            <input type="text" id="staffSearchId" maxlength="13" placeholder="เลขประจำตัวประชาชน 13 หลัก" style="text-align:center;letter-spacing:.15em;font-size:16px;">
+          </div>
+          <button onclick="staffSearch()" id="btnStaffSearch" class="btn btn-primary" style="white-space:nowrap;">
+            <i class="fa-solid fa-search"></i> ค้นหา
+          </button>
+        </div>
+      </div>
+
+      <div id="staffResult" style="display:none;">
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px;">
+          <button onclick="printApplication()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF</button>
+        </div>
+        <div id="staffDataCards"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CONFIG — เปลี่ยน PIN ได้ที่นี่
+// ============================================================
+const STAFF_PIN = '1234';
+
+// ============================================================
+//  TAB NAVIGATION
+// ============================================================
+function switchTab(tabId) {
+  ['formTab','trackTab','staffTab'].forEach(t => {
+    document.getElementById('content-'+t).style.display = 'none';
+    document.getElementById('btn-'+t).classList.remove('active');
+  });
+  document.getElementById('content-'+tabId).style.display = 'block';
+  document.getElementById('btn-'+tabId).classList.add('active');
+}
+
+// ============================================================
+//  WIZARD — multi-step
+// ============================================================
+const TOTAL_STEPS = 7;
+const STEP_LABELS = ['ข้อมูลการสมัคร\nและส่วนตัว','การศึกษา','ความสามารถพิเศษ','ประวัติการทำงาน','ผลงาน/เงินเดือน','เอกสาร','ประวัติ/ความพร้อม'];
+let currentStep = 1;
+
+(function initWizard(){
+  // สร้าง sidebar steps
+  const sb = document.getElementById('sidebarSteps');
+  for(let i=1;i<=TOTAL_STEPS;i++){
+    const a = document.createElement('div');
+    a.className = 'sidebar-step' + (i===1?' active':'');
+    a.id = 'sideStep'+i;
+    a.onclick = ()=>{ if(i<=currentStep){ currentStep=i; renderStep(); } };
+    a.innerHTML = `<div class="ss-num" id="ssNum${i}">${i}</div><div class="ss-label">${STEP_LABELS[i-1].replace('\n','<br>')}</div>`;
+    sb.appendChild(a);
+  }
+  renderStep();
+  addEduRow(); addExpRow(); addExpRow(); addExpRow();
+  addLangRow('ภาษาอังกฤษ');
+})();
+
+function renderStep(){
+  // show/hide steps
+  document.querySelectorAll('.wizard-step').forEach(s => {
+    const active = +s.dataset.step === currentStep;
+    s.classList.toggle('hidden', !active);
+    if(active) {
+      // re-trigger animation
+      s.style.animation = 'none';
+      s.offsetHeight; // reflow
+      s.style.animation = '';
+    }
+  });
+  // update sidebar
+  for(let i=1;i<=TOTAL_STEPS;i++){
+    const step = document.getElementById('sideStep'+i);
+    const num  = document.getElementById('ssNum'+i);
+    if(i < currentStep){
+      step.className = 'sidebar-step done';
+      num.innerHTML  = '<i class="fa-solid fa-check" style="font-size:12px;"></i>';
+    } else if(i === currentStep){
+      step.className = 'sidebar-step active';
+      num.innerHTML  = i;
+    } else {
+      step.className = 'sidebar-step';
+      num.innerHTML  = i;
+    }
+  }
+  // update mobile progress
+  const pct = Math.round((currentStep/TOTAL_STEPS)*100);
+  document.getElementById('progressBarFill').style.width = pct+'%';
+  document.getElementById('mobileStepNum').textContent  = `ขั้นตอนที่ ${currentStep} จาก ${TOTAL_STEPS}`;
+  document.getElementById('mobileStepTitle').textContent = STEP_LABELS[currentStep-1].replace('\n',' ');
+  // nav buttons
+  document.getElementById('btnPrev').style.display = currentStep===1?'none':'flex';
+  document.getElementById('btnNext').style.display = currentStep===TOTAL_STEPS?'none':'flex';
+  document.getElementById('btnSubmitForm').style.display = currentStep===TOTAL_STEPS?'flex':'none';
+  // scroll to top of content
+  const target = document.querySelector('.wizard-content') || document.getElementById('appForm');
+  window.scrollTo({ top: target.getBoundingClientRect().top + scrollY - 90, behavior:'smooth' });
+}
+
+function validateCurrentStep(){
+  const stepEl = document.querySelector(`.wizard-step[data-step="${currentStep}"]`);
+  const bad = stepEl.querySelector(':invalid');
+  if(bad){ bad.reportValidity(); bad.scrollIntoView({behavior:'smooth',block:'center'}); return false; }
+  if(currentStep===1){
+    const id = document.getElementById('formId').value;
+    if(id.length!==13){ showWarn('กรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก'); return false; }
+  }
+  return true;
+}
+function nextStep(){ if(!validateCurrentStep()) return; if(currentStep<TOTAL_STEPS){ currentStep++; renderStep(); } }
+function prevStep(){ if(currentStep>1){ currentStep--; renderStep(); } }
+
+// ============================================================
+//  DYNAMIC ROWS
+// ============================================================
+function addEduRow(){
+  const c = document.getElementById('eduContainer');
+  const d = document.createElement('div');
+  d.className = 'edu-row';
+  d.style.position='relative';
+  d.innerHTML = `<button type="button" class="row-remove" onclick="this.parentElement.remove()">✕</button>
+    <div class="form-grid col-3" style="gap:8px;">
+      <div class="field"><label>ระดับ</label><input type="text" class="edu-level" placeholder="เช่น ป.ตรี"></div>
+      <div class="field"><label>ชื่อวุฒิ</label><input type="text" class="edu-degree" placeholder="เช่น วท.บ."></div>
+      <div class="field"><label>วิชาเอก/สาขา</label><input type="text" class="edu-major"></div>
+      <div class="field" style="grid-column:span 2"><label>ชื่อสถาบัน</label><input type="text" class="edu-inst"></div>
+      <div class="field"><label>ปีที่สำเร็จ (พ.ศ.)</label><input type="text" class="edu-year" placeholder="2566"></div>
+      <div class="field"><label>เกรดเฉลี่ย (GPA)</label><input type="text" class="edu-gpa" placeholder="3.50"></div>
+    </div>`;
+  c.appendChild(d);
+}
+
+function addExpRow(){
+  const c = document.getElementById('expContainer');
+  const idx = c.children.length+1;
+  const d = document.createElement('div');
+  d.className = 'exp-row';
+  d.style.position='relative';
+  d.innerHTML = `<button type="button" class="row-remove" onclick="this.parentElement.remove()">✕</button>
+    <div style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px;">ลำดับที่ ${idx}</div>
+    <div class="form-grid col-3" style="gap:8px;">
+      <div class="field"><label>ตั้งแต่ (เดือน/ปี)</label><input type="text" class="exp-from" placeholder="01/2565"></div>
+      <div class="field"><label>ถึง (เดือน/ปี)</label><input type="text" class="exp-to" placeholder="ปัจจุบัน"></div>
+      <div class="field"><label>อัตราเงินเดือน (บาท)</label><input type="number" class="exp-salary"></div>
+      <div class="field" style="grid-column:span 2"><label>ตำแหน่ง / หน้าที่</label><input type="text" class="exp-pos"></div>
+      <div class="field"><label>สาเหตุที่ออก</label><input type="text" class="exp-reason"></div>
+      <div class="field" style="grid-column:span 3"><label>ชื่อ-ที่อยู่สถานที่ทำงาน</label><input type="text" class="exp-company"></div>
+    </div>`;
+  c.appendChild(d);
+}
+
+function addLangRow(defaultName){
+  const c = document.getElementById('langContainer');
+  const d = document.createElement('div');
+  d.className = 'lang-row';
+  d.style.position='relative';
+  d.innerHTML = `<button type="button" class="row-remove" onclick="this.parentElement.remove()">✕</button>
+    <div class="form-grid" style="grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:8px;align-items:end;">
+      <div class="field"><label>ภาษา</label><input type="text" class="lang-name" value="${defaultName||''}"></div>
+      <div class="field"><label>ฟัง</label><select class="lang-listen"><option value="">-</option><option>พอใช้</option><option>ดี</option><option>ดีมาก</option></select></div>
+      <div class="field"><label>พูด</label><select class="lang-speak"><option value="">-</option><option>พอใช้</option><option>ดี</option><option>ดีมาก</option></select></div>
+      <div class="field"><label>อ่าน</label><select class="lang-read"><option value="">-</option><option>พอใช้</option><option>ดี</option><option>ดีมาก</option></select></div>
+      <div class="field"><label>เขียน</label><select class="lang-write"><option value="">-</option><option>พอใช้</option><option>ดี</option><option>ดีมาก</option></select></div>
+    </div>`;
+  c.appendChild(d);
+}
+
+// ============================================================
+//  TOGGLE HELPERS
+// ============================================================
+function toggleSpouse(){ document.getElementById('spouseBox').style.display = document.getElementById('formMarital').value==='โสด'?'none':'grid'; }
+function toggleChildren(){ document.getElementById('childrenField').style.display = document.getElementById('formNoChildren').checked?'none':'block'; }
+function toggleStudying(){ document.getElementById('studyingBox').style.display = document.getElementById('formStudying').value==='ใช่'?'block':'none'; }
+function toggleTraining(){ document.getElementById('trainingBox').style.display = document.getElementById('formTraining').value==='มี'?'block':'none'; }
+function toggleExp(){
+  const no = document.getElementById('noExp').checked;
+  const c = document.getElementById('expContainer');
+  c.style.opacity = no?'.35':'1'; c.style.pointerEvents = no?'none':'auto';
+  if(no) c.querySelectorAll('input,select').forEach(e=>e.value='');
+}
+function toggleDecoration(){ document.getElementById('decorationBox').style.display = document.getElementById('formDecoration').value==='มี'?'block':'none'; }
+function togglePrevApplied(){ document.getElementById('prevAppliedBox').style.display = document.getElementById('formPrevApplied').value==='เคย'?'block':'none'; }
+function toggleReadiness(){ document.getElementById('formReadinessDate').style.display = document.getElementById('formReadiness').value==='มีข้อผูกพัน'?'block':'none'; }
+
+// ============================================================
+//  FILE READER
+// ============================================================
+function getFileData(id){
+  return new Promise(resolve=>{
+    const fi = document.getElementById(id);
+    if(fi&&fi.files.length>0){
+      const r = new FileReader();
+      r.onload = e=>resolve({data:e.target.result,name:fi.files[0].name});
+      r.readAsDataURL(fi.files[0]);
+    } else resolve(null);
+  });
+}
+function fileLabel(id){
+  const fi = document.getElementById(id);
+  return fi&&fi.files.length>0 ? `<span style="color:var(--success);">✓ ${fi.files[0].name}</span>` : '<span style="color:var(--danger);">ไม่ได้แนบ</span>';
+}
+
+// ============================================================
+//  COLLECT PAYLOAD
+// ============================================================
+async function collectPayload(){
+  const idStr = document.getElementById('formId').value;
+  let eduText='';
+  document.querySelectorAll('.edu-row').forEach((r,i)=>{
+    const lvl=r.querySelector('.edu-level').value;
+    if(lvl) eduText+=`${i+1}. ${lvl} / ${r.querySelector('.edu-degree').value} / ${r.querySelector('.edu-major').value} / ${r.querySelector('.edu-inst').value} / ปี ${r.querySelector('.edu-year').value} / GPA ${r.querySelector('.edu-gpa').value}\n`;
+  });
+  let expText=document.getElementById('noExp').checked?'ไม่มีประสบการณ์':'';
+  if(!document.getElementById('noExp').checked){
+    document.querySelectorAll('.exp-row').forEach((r,i)=>{
+      const from=r.querySelector('.exp-from').value;
+      if(from) expText+=`${i+1}. ${from}–${r.querySelector('.exp-to').value} | ${r.querySelector('.exp-pos').value} | ${r.querySelector('.exp-company').value} | เงินเดือน ${r.querySelector('.exp-salary').value} | สาเหตุ: ${r.querySelector('.exp-reason').value}\n`;
+    });
+    if(!expText) expText='ไม่ระบุ';
+  }
+  let langText='';
+  document.querySelectorAll('.lang-row').forEach((r,i)=>{
+    const nm=r.querySelector('.lang-name').value;
+    if(nm) langText+=`${nm}: ฟัง ${r.querySelector('.lang-listen').value||'-'} / พูด ${r.querySelector('.lang-speak').value||'-'} / อ่าน ${r.querySelector('.lang-read').value||'-'} / เขียน ${r.querySelector('.lang-write').value||'-'}\n`;
+  });
+  return {
+    position:v('formPosition'),department:v('formDepartment'),
+    title:v('formTitle'),name:v('formName'),nickname:v('formNickname'),nameEN:v('formNameEN'),
+    citizenId:idStr,nationality:v('formNationality'),race:v('formRace'),religion:v('formReligion'),
+    phoneHome:v('formPhoneHome'),phone:v('formPhone'),phone2:v('formPhone2'),email:v('formEmail'),
+    dob:v('formDob'),birthPlace:v('formBirthPlace'),
+    weight:v('formWeight'),height:v('formHeight'),bloodGroup:v('formBlood'),disease:v('formDisease'),
+    smoking:v('formSmoking'),alcohol:v('formAlcohol'),militaryStatus:v('formMilitary'),ordainStatus:v('formOrdain'),
+    fatherName:v('formFatherName'),fatherSurname:v('formFatherSurname'),fatherStatus:v('formFatherStatus'),fatherOccupation:v('formFatherOccupation'),
+    motherName:v('formMotherName'),motherSurname:v('formMotherSurname'),motherStatus:v('formMotherStatus'),motherOccupation:v('formMotherOccupation'),
+    maritalStatus:v('formMarital'),spouseName:v('formSpouseName'),spouseOccupation:v('formSpouseOccupation'),spousePhone:v('formSpousePhone'),
+    hasChildren:document.getElementById('formNoChildren').checked?'ไม่มี':'มี',childrenText:v('formChildrenText'),
+    addressNo:v('formAddrNo'),addressMoo:v('formAddrMoo'),addressSoi:v('formAddrSoi'),addressRoad:v('formAddrRoad'),
+    addressTambon:v('formAddrTambon'),addressAmphoe:v('formAddrAmphoe'),addressProvince:v('formAddrProvince'),addressZip:v('formAddrZip'),
+    emgName:v('formEmgName'),emgRelation:v('formEmgRelation'),emgPhoneMobile:v('formEmgPhoneMobile'),
+    educationText:eduText,studying:v('formStudying'),studyingText:v('formStudyingText'),studyLeave:v('formStudyLeave'),studyFund:v('formStudyFund'),studyFundDetail:v('formStudyFundDetail'),
+    training:v('formTraining'),trainingText:v('formTrainingText'),
+    langText:langText,typeThai:v('formTypeThai'),typeEng:v('formTypeEng'),computer:v('formComputer'),computerPrograms:v('formComputerPrograms'),
+    otherSkills:v('formOtherSkills'),hobbies:v('formHobbies'),
+    experienceText:expText,decoration:v('formDecoration'),decorationText:v('formDecorationText'),
+    refName:v('formRefName'),refRelation:v('formRefRelation'),refPhone:v('formRefPhone'),
+    discPast:v('formDiscPast'),discInvestigate:v('formDiscInvestigate'),discCommittee:v('formDiscCommittee'),lawsuit:v('formLawsuit'),discDetail:v('formDiscDetail'),
+    specialWorks:v('formSpecialWorks'),expectedSalary:v('formSalary'),
+    otherDocDetail:v('formOtherDocDetail'),
+    prevApplied:v('formPrevApplied'),prevAppliedTimes:v('formPrevAppliedTimes'),prevAppliedText:v('formPrevAppliedText'),
+    readiness:v('formReadiness'),readinessDate:v('formReadinessDate'),readinessOther:v('formReadinessOther'),
+    idCard:await getFileData('fileIdCard'),houseReg:await getFileData('fileHouseReg'),
+    transcript:await getFileData('fileTranscript'),degree:await getFileData('fileDegree'),
+    medical:await getFileData('fileMedical'),photo:await getFileData('filePhoto'),
+    nameChange:await getFileData('fileNameChange'),license:await getFileData('fileLicense'),
+    workCert:await getFileData('fileWorkCert'),militaryFile:await getFileData('fileMilitary'),
+    otherDoc:await getFileData('fileOther')
+  };
+}
+function v(id){ const el=document.getElementById(id); return el?el.value:''; }
+
+// ============================================================
+//  REVIEW + SUBMIT
+// ============================================================
+async function reviewBeforeSubmit(){
+  const formEl=document.getElementById('appForm');
+  if(!validateCurrentStep()) return;
+  const idStr=document.getElementById('formId').value;
+  if(idStr.length!==13){ showWarn('กรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก'); return; }
+  const data = await collectPayload();
+  window.__pendingPayload = data;
+
+  const html=`<div class="text-left text-sm" style="max-height:55vh;overflow-y:auto;font-size:13px;">
+    <b style="color:#1552a0;">ตำแหน่ง:</b> ${data.position} — ${data.department}<br>
+    <b style="color:#1552a0;">ชื่อ-สกุล:</b> ${data.title} ${data.name}<br>
+    <b style="color:#1552a0;">เลขบัตรประชาชน:</b> ${idStr}<br>
+    <b style="color:#1552a0;">วันเกิด:</b> ${data.dob}<br>
+    <b style="color:#1552a0;">มือถือ:</b> ${data.phone} &nbsp; <b style="color:#1552a0;">อีเมล:</b> ${data.email}<br>
+    <b style="color:#1552a0;">ที่อยู่:</b> ${data.addressNo} ${data.addressTambon} ${data.addressAmphoe} ${data.addressProvince}<br>
+    <hr style="margin:10px 0;border:none;border-top:1px solid #ddd;">
+    <b style="color:#1552a0;">เอกสารแนบ:</b><br>
+    (1) ใบอนุญาต: ${fileLabel('fileLicense')}<br>
+    (2) Transcript: ${fileLabel('fileTranscript')}<br>
+    (3) ใบปริญญา: ${fileLabel('fileDegree')}<br>
+    (4) ใบผ่านงาน: ${fileLabel('fileWorkCert')}<br>
+    (5) บัตรปชช.: ${fileLabel('fileIdCard')}<br>
+    (6) ทะเบียนบ้าน: ${fileLabel('fileHouseReg')}<br>
+    (8) ใบรับรองแพทย์: ${fileLabel('fileMedical')}<br>
+    (10) รูปถ่าย: ${fileLabel('filePhoto')}
+  </div>`;
+
+  Swal.fire({
+    title:'ตรวจสอบข้อมูลก่อนส่งใบสมัคร',html,width:580,
+    showCancelButton:true,
+    confirmButtonText:'<i class="fa-solid fa-check"></i> ยืนยันส่งใบสมัคร',
+    cancelButtonText:'<i class="fa-solid fa-pen"></i> แก้ไข',
+    confirmButtonColor:'#0d7a6e',cancelButtonColor:'#64748b'
+  }).then(r=>{ if(r.isConfirmed) doSubmit(); });
+}
+
+async function doSubmit(){
+  document.getElementById('loadingOverlay').classList.add('show');
+  try{
+    const payload = window.__pendingPayload || await collectPayload();
+    google.script.run
+      .withSuccessHandler(res=>{
+        document.getElementById('loadingOverlay').classList.remove('show');
+        if(res.success){
+          Swal.fire({icon:'success',title:'ส่งใบสมัครสำเร็จ',text:'ระบบได้รับข้อมูลและเอกสารของท่านเรียบร้อยแล้ว',confirmButtonColor:'#0d7a6e'})
+          .then(()=>{ document.getElementById('appForm').reset(); currentStep=1; renderStep(); });
+        } else {
+          Swal.fire({icon:'error',title:'ไม่สามารถส่งใบสมัครได้',text:res.message,confirmButtonColor:'#c0392b'});
+        }
+      })
+      .withFailureHandler(err=>{
+        document.getElementById('loadingOverlay').classList.remove('show');
+        Swal.fire({icon:'error',title:'เกิดข้อผิดพลาดทางระบบ',text:err,confirmButtonColor:'#c0392b'});
+      })
+      .submitApplication(payload);
+  } catch(e){
+    document.getElementById('loadingOverlay').classList.remove('show');
+    Swal.fire({icon:'error',title:'ข้อผิดพลาดในการโหลดไฟล์',text:'ขนาดไฟล์อาจใหญ่เกินไป หรืออ่านไฟล์ไม่สำเร็จ',confirmButtonColor:'#c0392b'});
+  }
+}
+
+// ============================================================
+//  TRACK STATUS
+// ============================================================
+let currentSearchId='', currentRating=0;
+function renderStars(val){
+  document.querySelectorAll('.star-btn').forEach(b=>{
+    b.classList.toggle('lit',+b.dataset.val<=val);
+  });
+}
+document.querySelectorAll('.star-btn').forEach(b=>{
+  b.addEventListener('click',()=>{ currentRating=+b.dataset.val; renderStars(currentRating); });
+});
+function resetSurveyBox(){
+  currentRating=0; renderStars(0);
+  document.getElementById('surveyFeedback').value='';
+  document.getElementById('surveyFormBox').style.display='block';
+  document.getElementById('surveyThanks').style.display='none';
+}
+
+function searchStatus(){
+  const id=document.getElementById('citizenIdSearch').value;
+  if(id.length!==13){ showWarn('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก'); return; }
+  const btn=document.getElementById('btnSearch');
+  btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังตรวจสอบ...';
+  btn.disabled=true;
+  google.script.run
+    .withSuccessHandler(res=>{
+      btn.innerHTML='<i class="fa-solid fa-magnifying-glass"></i> ตรวจสอบสถานะ';
+      btn.disabled=false;
+      if(res.success){
+        currentSearchId=id;
+        document.getElementById('resName').innerText=res.name;
+        document.getElementById('resPosition').innerText=res.position;
+        document.getElementById('resStatus').innerText=res.status;
+        document.getElementById('resExamDate').innerText=res.examDate;
+        const urlSec=document.getElementById('urlSection');
+        if(res.announcementUrl){ document.getElementById('resUrlBtn').href=res.announcementUrl; urlSec.style.display='block'; }
+        else urlSec.style.display='none';
+        if(res.missingDocs&&res.missingDocs.length>0){
+          document.getElementById('missingDocsList').innerHTML=res.missingDocs.map(d=>`<li>${d}</li>`).join('');
+          document.getElementById('missingDocsDeadline').innerText=res.documentDeadline?`📅 กรุณานำส่งเอกสารเพิ่มเติมภายในวันที่ ${res.documentDeadline}`:'';
+          document.getElementById('missingDocsSection').style.display='block';
+          Swal.fire({
+            icon:'warning',title:'เอกสารยังไม่ครบถ้วน',
+            html:`<div style="text-align:left;font-size:14px;"><p>กรุณาจัดเตรียมและนำส่งเอกสารต่อไปนี้เพิ่มเติม:</p><ul style="padding-left:18px;margin-top:8px;">${res.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>${res.documentDeadline?`<p style="margin-top:10px;color:#c0392b;font-weight:700;">📅 กำหนดส่งภายในวันที่ ${res.documentDeadline}</p>`:''}</div>`,
+            confirmButtonText:'รับทราบ',confirmButtonColor:'#c0392b'
+          });
+        } else document.getElementById('missingDocsSection').style.display='none';
+        resetSurveyBox();
+        document.getElementById('resultSection').style.display='block';
+      } else {
+        Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'});
+        document.getElementById('resultSection').style.display='none';
+      }
+    })
+    .withFailureHandler(err=>{
+      btn.innerHTML='<i class="fa-solid fa-magnifying-glass"></i> ตรวจสอบสถานะ';
+      btn.disabled=false;
+      Swal.fire({icon:'error',title:'ดึงข้อมูลไม่สำเร็จ',text:err,confirmButtonColor:'#c0392b'});
+    })
+    .checkStatus(id);
+}
+
+function submitSurvey(){
+  if(!currentRating){ showWarn('กรุณาเลือกคะแนนดาวก่อนส่งแบบประเมิน'); return; }
+  const btn=document.getElementById('btnSurveySubmit');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>';
+  google.script.run
+    .withSuccessHandler(res=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> ส่งแบบประเมิน';
+      if(res.success){ document.getElementById('surveyFormBox').style.display='none'; document.getElementById('surveyThanks').style.display='block'; }
+      else Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',text:res.message,confirmButtonColor:'#c0392b'});
+    })
+    .withFailureHandler(err=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> ส่งแบบประเมิน';
+      Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
+    })
+    .saveSurvey(currentSearchId,currentRating,document.getElementById('surveyFeedback').value);
+}
+
+// ============================================================
+//  STAFF PANEL
+// ============================================================
+let staffUnlocked=false;
+function checkPin(){
+  if(document.getElementById('staffPin').value===STAFF_PIN){
+    staffUnlocked=true;
+    document.getElementById('staffPinView').style.display='none';
+    document.getElementById('staffMainView').style.display='block';
+  } else {
+    Swal.fire({icon:'error',title:'รหัสผ่านไม่ถูกต้อง',confirmButtonColor:'#c0392b'});
+  }
+}
+document.getElementById('staffPin').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPin(); });
+
+function staffSearch(){
+  const id=document.getElementById('staffSearchId').value;
+  if(id.length!==13){ showWarn('กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก'); return; }
+  const btn=document.getElementById('btnStaffSearch');
+  btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>';
+  btn.disabled=true;
+  google.script.run
+    .withSuccessHandler(res=>{
+      btn.innerHTML='<i class="fa-solid fa-search"></i> ค้นหา';
+      btn.disabled=false;
+      if(res.success){ renderStaffData(res); document.getElementById('staffResult').style.display='block'; }
+      else Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'});
+    })
+    .withFailureHandler(err=>{
+      btn.innerHTML='<i class="fa-solid fa-search"></i> ค้นหา';
+      btn.disabled=false;
+      Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
+    })
+    .getApplicantData(id);
+}
+
+function renderStaffData(d){
+  window.__staffData=d;
+  const card=(title,rows)=>`
+    <div class="card" style="margin-bottom:14px;">
+      <div style="background:var(--blue);color:#fff;padding:10px 18px;border-radius:10px 10px 0 0;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;">${title}</div>
+      <div class="card-body" style="padding:0;">
+        <table class="info-table">
+          <tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]||'—'}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById('staffDataCards').innerHTML =
+    card('ข้อมูลการสมัคร',[['ตำแหน่งที่สมัคร',d.position],['หน่วยงาน',d.department]]) +
+    card('1. ประวัติส่วนตัว',[
+      ['ชื่อ-นามสกุล',`${d.title||''} ${d.name||''}`],['ชื่ออังกฤษ',d.nameEN],['ชื่อเล่น',d.nickname],
+      ['เลขประจำตัวประชาชน',d.citizenId],['วัน/เดือน/ปีเกิด',d.dob],['สถานที่เกิด',d.birthPlace],
+      ['สัญชาติ/เชื้อชาติ/ศาสนา',`${d.nationality||''} / ${d.race||''} / ${d.religion||''}`],
+      ['มือถือ',d.phone],['อีเมล',d.email],
+      ['น้ำหนัก/ส่วนสูง',`${d.weight||'—'} กก. / ${d.height||'—'} ซม.`],['กรุ๊ปเลือด',d.bloodGroup],
+      ['สูบบุหรี่/ดื่มแอลกอฮอล์',`${d.smoking||''} / ${d.alcohol||''}`],
+      ['ทหาร/อุปสมบท',`${d.militaryStatus||''} / ${d.ordainStatus||''}`],
+      ['บิดา',`${d.fatherName||''} ${d.fatherSurname||''} (${d.fatherStatus||''}) อาชีพ ${d.fatherOccupation||''}`],
+      ['มารดา',`${d.motherName||''} ${d.motherSurname||''} (${d.motherStatus||''}) อาชีพ ${d.motherOccupation||''}`],
+      ['สถานภาพสมรส',d.maritalStatus],['คู่สมรส',d.spouseName],['บุตร',d.hasChildren],
+      ['ที่อยู่',`${d.addressNo||''} หมู่ ${d.addressMoo||''} ต.${d.addressTambon||''} อ.${d.addressAmphoe||''} จ.${d.addressProvince||''} ${d.addressZip||''}`],
+      ['ผู้ติดต่อฉุกเฉิน',`${d.emgName||''} (${d.emgRelation||''}) โทร. ${d.emgPhoneMobile||''}`],
+    ]) +
+    card('2. ประวัติการศึกษา',[
+      ['วุฒิการศึกษา',d.educationText],['กำลังศึกษาต่อ',d.studying],['การฝึกอบรม/ดูงาน',d.trainingText||d.training]
+    ]) +
+    card('3. ความรู้ความสามารถ',[
+      ['ภาษาต่างประเทศ',d.langText],['พิมพ์ดีด ไทย/อังกฤษ',`${d.typeThai||'0'} / ${d.typeEng||'0'} คำ/นาที`],
+      ['คอมพิวเตอร์',`${d.computer||''} — ${d.computerPrograms||''}`],['ความสามารถอื่นๆ',d.otherSkills]
+    ]) +
+    card('4. ประวัติการทำงาน',[
+      ['ประสบการณ์',d.experienceText],['เครื่องราชอิสริยาภรณ์',d.decorationText||d.decoration],
+      ['ผู้รับรองความประพฤติ',`${d.refName||''} (${d.refRelation||''}) โทร. ${d.refPhone||''}`],
+      ['ประวัติวินัย/คดี',`เคยถูกลงโทษ: ${d.discPast||''} | สอบสวน: ${d.discInvestigate||''} | คดี: ${d.lawsuit||''}`],
+    ]) +
+    card('5-8. ผลงาน / เอกสาร / ความพร้อม',[
+      ['ผลงานความเชี่ยวชาญ',d.specialWorks],['เงินเดือนที่ต้องการ',d.expectedSalary],
+      ['เคยสมัครมาก่อน',d.prevApplied],['ความพร้อมในการทำงาน',d.readiness],
+    ]) +
+    card('เอกสารแนบ (ลิงก์ Google Drive)',[
+      ['ใบอนุญาตประกอบวิชาชีพ',d.licenseUrl?`<a href="${d.licenseUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['Transcript',d.transcriptUrl?`<a href="${d.transcriptUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['ใบปริญญา',d.degreeUrl?`<a href="${d.degreeUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['ใบผ่านงาน',d.workCertUrl?`<a href="${d.workCertUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['บัตรประชาชน',d.idCardUrl?`<a href="${d.idCardUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['ทะเบียนบ้าน',d.houseRegUrl?`<a href="${d.houseRegUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['ใบรับรองแพทย์',d.medicalUrl?`<a href="${d.medicalUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+      ['รูปถ่าย',d.photoUrl?`<a href="${d.photoUrl}" target="_blank">เปิดไฟล์</a>`:'ไม่ได้แนบ'],
+    ]);
+}
+
+function printApplication(){
+  const d = window.__staffData;
+  if(!d){ Swal.fire({icon:'warning',text:'ไม่มีข้อมูลให้พิมพ์ กรุณาค้นหาผู้สมัครก่อน'}); return; }
+
+  const def = (v,fb='') => (v&&v.toString().trim()) ? v.toString().trim() : fb;
+  const dline = (val, w) => `<span class="dl" style="min-width:${w||'80px'}">${def(val,'')}</span>`;
+  const chk = (val, opt) => val===opt ? '<b>(✓)</b>' : '(&nbsp;&nbsp;)';
+
+  // ----- 4.1 ประสบการณ์ทำงาน: แยกข้อมูลจาก experienceText กลับเป็นรายการสูงสุด 5 ลำดับ
+  // เหมือนแบบฟอร์มต้นฉบับ (ช่องว่างเว้นบรรทัดถ้ายังไม่มีข้อมูล)
+  const expRows = (() => {
+    const raw = def(d.experienceText).split('\n').map(r=>r.trim()).filter(r=>r);
+    if (!raw.length || raw[0] === 'ไม่มีประสบการณ์') return [];
+    return raw.map(r => {
+      const body = r.replace(/^\d+\.\s*/, '');
+      const segs = body.split('|').map(p => p.replace(/^[^:]*:\s*/, '').trim());
+      const fromTo = (segs[0] || '').split(/[–-]/).map(s => s.trim());
+      return {
+        from: fromTo[0] || '', to: fromTo[1] || '',
+        position: segs[1] || '', company: segs[2] || '',
+        salary: (segs[3] || '').replace(/[^0-9.,]/g, ''), reason: segs[4] || ''
+      };
+    });
+  })();
+  while (expRows.length < 5) expRows.push({ from:'', to:'', position:'', company:'', salary:'', reason:'' });
+
+  const expBlock = expRows.slice(0, 5).map((e, i) => `<div class="row" style="margin-bottom:10px;">
+    ${i+1}. ตั้งแต่วันที่ ${dline(e.from,'90px')} ถึงวันที่ ${dline(e.to,'90px')} &nbsp; อัตราเงินเดือน ${dline(e.salary,'70px')} บาท
+    <br>&nbsp;&nbsp;&nbsp;&nbsp; ตำแหน่ง ${dline(e.position,'220px')}
+    <br>&nbsp;&nbsp;&nbsp;&nbsp; หน้าที่โดยสังเขป ${dline('','260px')}
+    <br>&nbsp;&nbsp;&nbsp;&nbsp; ชื่อ /ที่อยู่สถานที่ทำงาน ${dline(e.company,'240px')}
+    <br>&nbsp;&nbsp;&nbsp;&nbsp; สาเหตุที่ลาออก ${dline(e.reason,'220px')}
+  </div>`).join('');
+
+  const printHtml = `<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ใบสมัครงาน — ${def(d.title)} ${def(d.name)}</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'TH Sarabun PSK','Sarabun','Prompt',Tahoma,sans-serif;
+    font-size: 14pt; color: #000; background: #fff;
+    line-height: 1.45;
+  }
+  .page { width: 100%; padding-bottom: 8mm; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  /* dotted fill-in line */
+  .dl {
+    display: inline-block; border-bottom: 1px solid #444;
+    vertical-align: bottom; padding: 0 3px;
+    font-weight: 600;
+  }
+
+  /* HEADER */
+  .header-wrap { position: relative; text-align: center; padding-right: 90px; margin-bottom: 6px; }
+  .header-boxes {
+    position: absolute; top: 0; right: 0;
+    border: 1px solid #000; font-size: 11pt; padding: 5px 8px;
+    line-height: 2; text-align: left; min-width: 110px;
+  }
+  .header-boxes .hbl { border-bottom: 1px solid #777; display: block; }
+  .logo { height: 64px; margin-bottom: 4px; }
+  .htitle1 { font-size: 15pt; font-weight: bold; }
+  .htitle2 { font-size: 15pt; font-weight: bold; margin-bottom: 4px; }
+  .pos-area { position: relative; padding-right: 95px; margin-top: 4px; }
+  .photo-box {
+    position: absolute; right: 0; top: 0;
+    width: 84px; height: 108px;
+    border: 1px solid #000;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-size: 9pt; text-align: center;
+    padding: 4px; line-height: 1.4;
+  }
+  .pos-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 3px; }
+  .pos-row .plabel { white-space: nowrap; }
+  .pos-row .pval { flex: 1; border-bottom: 1px solid #555; font-weight: bold; padding: 0 4px; }
+
+  /* SECTION */
+  .sec { border: 1px solid #000; margin-bottom: 8px; }
+  .sec-head {
+    background: #f2f2f2; border-bottom: 1px solid #000;
+    padding: 3px 8px; font-size: 14pt; font-weight: bold;
+    text-decoration: underline;
+  }
+  .sec-body { padding: 5px 8px; }
+  .row { margin-bottom: 4px; font-size: 13pt; }
+  .row2 { display: flex; gap: 16px; margin-bottom: 4px; font-size: 13pt; flex-wrap: wrap; }
+  .row2 .cell { display: flex; align-items: baseline; gap: 4px; }
+  .row2 .cell .lbl { white-space: nowrap; }
+  .row2 .cell .val { border-bottom: 1px solid #555; font-weight: bold; padding: 0 3px; min-width: 60px; }
+
+  /* signature */
+  .sig-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+  .sig-box { text-align: center; font-size: 13pt; }
+  .sig-box .sig-line { border-bottom: 1px solid #000; width: 200px; margin: 0 auto 4px; }
+  .sig-box .sub { font-size: 13pt; }
+
+  /* page 2+ heading */
+  .page-num { text-align: center; font-size: 12pt; margin-bottom: 6px; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 ============ -->
+<div class="page">
+  <div class="header-wrap">
+    <div class="header-boxes">
+      <span class="hbl">รหัสตำแหน่ง${dline('','90px')}</span>
+      <span>เลขประจำตัวสอบ${dline('','80px')}</span>
+    </div>
+    <img class="logo" src="https://med.nu.ac.th/home/images/logo-mednu.png"
+         onerror="this.src='https://upload.wikimedia.org/wikipedia/th/b/b2/Medicine_Naresuan.png'" alt="MED NU Logo">
+    <div class="htitle1">คณะแพทยศาสตร์ มหาวิทยาลัยนเรศวร</div>
+    <div class="htitle2">ใบสมัครงานเพื่อบรรจุเป็นพนักงานมหาวิทยาลัยนเรศวร</div>
+  </div>
+
+  <div class="pos-area">
+    <div class="photo-box">
+      ติดภาพถ่าย<br>ขนาด 1" × 1"<br>สีหรือขาวดำ<br>ใช้การเท่านั้น
+    </div>
+    <div class="pos-row">
+      <span class="plabel">สมัครในตำแหน่ง</span>
+      <span class="pval">${def(d.position)}</span>
+    </div>
+    <div class="pos-row">
+      <span class="plabel">หน่วยงาน</span>
+      <span class="pval">${def(d.department)}</span>
+    </div>
+    <div class="pos-row">
+      <span class="plabel">คณะแพทยศาสตร์ มหาวิทยาลัยนเรศวร</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="sec">
+    <div class="sec-head">1. ประวัติส่วนตัว</div>
+    <div class="sec-body">
+
+      <div class="row">
+        1.1 ชื่อ – นามสกุล (นาย/นาง/<u>นางสาว</u>/ยศ) ${dline(def(d.title)+' '+def(d.name),'180px')}
+        ชื่อเล่น ${dline(def(d.nickname),'80px')}
+      </div>
+      <div class="row">
+        NAME – SURNAME (MR./MISS/MRS.) ${dline(def(d.nameEN),'200px')}
+      </div>
+      <div class="row">
+        เลขบัตรประจำตัวประชาชน ${dline(def(d.citizenId),'160px')}
+      </div>
+      <div class="row2">
+        <div class="cell"><span class="lbl">สัญชาติ</span><span class="val">${def(d.nationality,'ไทย')}</span></div>
+        <div class="cell"><span class="lbl">เชื้อชาติ</span><span class="val">${def(d.race,'ไทย')}</span></div>
+        <div class="cell"><span class="lbl">ศาสนา</span><span class="val">${def(d.religion,'พุทธ')}</span></div>
+        <div class="cell"><span class="lbl">โทรศัพท์บ้าน</span><span class="val">${def(d.phoneHome)}</span></div>
+      </div>
+      <div class="row2">
+        <div class="cell"><span class="lbl">โทรศัพท์มือถือ</span><span class="val">${def(d.phone)}</span></div>
+        <div class="cell"><span class="lbl">2.</span><span class="val">${def(d.phone2)}</span></div>
+      </div>
+      <div class="row">E-mail Address ${dline(def(d.email),'220px')}</div>
+
+      <div class="row" style="margin-top:4px;">
+        1.2 วัน/เดือน/ปีเกิด ${dline(def(d.dob),'120px')}
+        &nbsp; สถานที่เกิด จังหวัด ${dline(def(d.birthPlace),'100px')}
+      </div>
+
+      <div class="row" style="margin-top:4px;">
+        1.3 น้ำหนัก ${dline(def(d.weight),'55px')} กก.(kg)
+        &nbsp; ส่วนสูง ${dline(def(d.height),'55px')} ซม.(cm)
+        &nbsp; กรุ๊ปเลือด ${dline(def(d.bloodGroup),'45px')}
+      </div>
+      <div class="row2">
+        <div class="cell"><span class="lbl">โรคประจำตัว</span></div>
+        <div class="cell"><span>${chk(def(d.disease,'ไม่มี'),'ไม่มี')} ไม่มี</span></div>
+        <div class="cell"><span>${def(d.disease)&&def(d.disease)!=='ไม่มี'?'(✓)':'(&nbsp;&nbsp;)'} มี (ระบุ) ${dline(def(d.disease)!=='ไม่มี'?def(d.disease):'','100px')}</span></div>
+      </div>
+      <div class="row2">
+        <div class="cell"><span class="lbl">สูบบุหรี่</span></div>
+        <div class="cell"><span>${chk(def(d.smoking),'ไม่สูบ')} ไม่สูบ</span></div>
+        <div class="cell"><span>${chk(def(d.smoking),'สูบ')} สูบ</span></div>
+        <div class="cell" style="margin-left:16px;"><span class="lbl">ดื่มแอลกอฮอล์</span></div>
+        <div class="cell"><span>${chk(def(d.alcohol),'ไม่ดื่ม')} ไม่ดื่ม</span></div>
+        <div class="cell"><span>${chk(def(d.alcohol),'ดื่ม')} ดื่ม</span></div>
+      </div>
+
+      <div class="row" style="margin-top:4px;">
+        1.4 สถานภาพทางทหาร &nbsp;
+        ${chk(def(d.militaryStatus),'ได้รับการยกเว้น')} ได้รับการยกเว้น &nbsp;
+        ${chk(def(d.militaryStatus),'ปลดเป็นทหารกองหนุน')} ปลดเป็นทหารกองหนุน &nbsp;
+        ${chk(def(d.militaryStatus),'จะเข้ารับการเกณฑ์ทหาร')} จะเข้ารับการเกณฑ์ทหาร &nbsp;
+        ${chk(def(d.militaryStatus),'ไม่ระบุ/หญิง')} ไม่ระบุ/หญิง
+      </div>
+
+      <div class="row">
+        1.5 สถานภาพอุปสมบท &nbsp;
+        ${chk(def(d.ordainStatus),'ผ่านการอุปสมบทแล้ว')} ผ่านการอุปสมบทแล้ว &nbsp;
+        ${chk(def(d.ordainStatus),'ยังไม่ได้อุปสมบท')} ยังไม่ได้อุปสมบท &nbsp;
+        ${chk(def(d.ordainStatus),'ไม่เกี่ยวข้อง')} ไม่เกี่ยวข้อง
+      </div>
+
+      <div class="row" style="margin-top:4px;">1.6 ข้อมูลบิดา / มารดา</div>
+      <div class="row">
+        &nbsp;&nbsp; – ชื่อบิดา ${dline(def(d.fatherName)+' '+def(d.fatherSurname),'160px')}
+        &nbsp; สถานภาพชีวิต
+        ${chk(def(d.fatherStatus),'มีชีวิตอยู่')} มีชีวิตอยู่ &nbsp;
+        ${chk(def(d.fatherStatus),'เสียชีวิต')} เสียชีวิต &nbsp;
+        อาชีพ ${dline(def(d.fatherOccupation),'80px')}
+      </div>
+      <div class="row">
+        &nbsp;&nbsp; – ชื่อมารดา ${dline(def(d.motherName)+' '+def(d.motherSurname),'160px')}
+        &nbsp; สถานภาพชีวิต
+        ${chk(def(d.motherStatus),'มีชีวิตอยู่')} มีชีวิตอยู่ &nbsp;
+        ${chk(def(d.motherStatus),'เสียชีวิต')} เสียชีวิต &nbsp;
+        อาชีพ ${dline(def(d.motherOccupation),'80px')}
+      </div>
+
+      <div class="row" style="margin-top:4px;">
+        1.7 สถานภาพการสมรส &nbsp;
+        ${chk(def(d.maritalStatus),'โสด')} โสด &nbsp;
+        ${chk(def(d.maritalStatus),'สมรส')} สมรส &nbsp;
+        ${chk(def(d.maritalStatus),'หย่า')} หย่า &nbsp;
+        ${chk(def(d.maritalStatus),'หม้าย')} หม้าย &nbsp;
+        ${chk(def(d.maritalStatus),'แยกกันอยู่')} แยกกันอยู่
+      </div>
+      ${def(d.spouseName)?`<div class="row">
+        &nbsp;&nbsp; ชื่อคู่สมรส ${dline(def(d.spouseName),'160px')}
+        &nbsp; อาชีพ ${dline(def(d.spouseOccupation),'100px')}
+        &nbsp; โทรศัพท์ ${dline(def(d.spousePhone),'100px')}
+      </div>`:''}
+
+      <div class="row" style="margin-top:4px;">
+        1.8 ข้อมูลบุตร ${chk(def(d.hasChildren),'ไม่มี')} ไม่มี &nbsp;
+        ${chk(def(d.hasChildren),'มี')} มี
+        ${def(d.childrenText)?'('+def(d.childrenText)+')':''}
+      </div>
+
+      <div class="row" style="margin-top:4px;">
+        1.9 ที่อยู่ปัจจุบัน
+        บ้านเลขที่ ${dline(def(d.addressNo),'50px')}
+        หมู่ ${dline(def(d.addressMoo),'35px')}
+        ตรอก/ซอย ${dline(def(d.addressSoi),'80px')}
+        ถนน ${dline(def(d.addressRoad),'80px')}
+      </div>
+      <div class="row">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        ตำบล/แขวง ${dline(def(d.addressTambon),'90px')}
+        อำเภอ/เขต ${dline(def(d.addressAmphoe),'90px')}
+        จังหวัด ${dline(def(d.addressProvince),'90px')}
+        รหัสไปรษณีย์ ${dline(def(d.addressZip),'60px')}
+      </div>
+
+      <div class="row" style="margin-top:4px;">
+        1.10 บุคคลที่สามารถติดต่อได้ในกรณีเร่งด่วน
+        ชื่อ-นามสกุล ${dline(def(d.emgName),'160px')}
+        เกี่ยวข้องเป็น ${dline(def(d.emgRelation),'90px')}
+        โทรศัพท์ ${dline(def(d.emgPhoneMobile),'100px')}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE 2: การศึกษา + ความสามารถ ============ -->
+<div class="page">
+  <div class="page-num">- 2 -</div>
+
+  <div class="sec">
+    <div class="sec-head">2. ประวัติการศึกษา (ตั้งแต่ระดับมัธยมศึกษาตอนต้นหรือเทียบเท่าขึ้นไป)</div>
+    <div class="sec-body">
+      <div class="row">2.1 วุฒิการศึกษา</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13pt;margin:4px 0 8px;">
+        <tr style="background:#f2f2f2;">
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">ระดับ</th>
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">ชื่อวุฒิ</th>
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">วิชาเอก</th>
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">ชื่อสถาบัน</th>
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">ปีที่สำเร็จ</th>
+          <th style="border:1px solid #999;padding:3px 6px;text-align:center;">GPA</th>
+        </tr>
+        ${(()=>{
+          const rows = def(d.educationText).split('\n').filter(r=>r.trim());
+          if(!rows.length) return '<tr><td colspan="6" style="border:1px solid #999;padding:4px;text-align:center;">—</td></tr>';
+          return rows.map(r=>{
+            const parts = r.replace(/^\d+\.\s*/,'').split('|').map(p=>p.replace(/^[^:]+:/,'').trim());
+            return `<tr>
+              <td style="border:1px solid #999;padding:3px 6px;">${parts[0]||''}</td>
+              <td style="border:1px solid #999;padding:3px 6px;">${parts[1]||''}</td>
+              <td style="border:1px solid #999;padding:3px 6px;">${parts[2]||''}</td>
+              <td style="border:1px solid #999;padding:3px 6px;">${parts[3]||''}</td>
+              <td style="border:1px solid #999;padding:3px 6px;text-align:center;">${parts[4]||''}</td>
+              <td style="border:1px solid #999;padding:3px 6px;text-align:center;">${parts[5]||''}</td>
+            </tr>`;
+          }).join('');
+        })()}
+      </table>
+      <div class="row">2.2 ปัจจุบันกำลังศึกษาต่อ
+        ${chk(def(d.studying),'ไม่ใช่')} ไม่ใช่ &nbsp;
+        ${chk(def(d.studying),'ใช่')} ใช่ (โปรดระบุ) ${dline(def(d.studyingText),'200px')}
+      </div>
+      <div class="row">2.3 การฝึกอบรม/ดูงาน
+        ${chk(def(d.training),'ไม่มี')} ไม่มี &nbsp;
+        ${chk(def(d.training),'มี')} มี
+        ${def(d.trainingText)?'<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+def(d.trainingText).replace(/\n/g,'<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'):''}
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head">3. ความรู้ความสามารถพิเศษ</div>
+    <div class="sec-body">
+      <div class="row">3.1 ภาษาต่างประเทศ</div>
+      <table style="width:80%;border-collapse:collapse;font-size:13pt;margin:4px 0 8px;">
+        <tr style="background:#f2f2f2;">
+          <th style="border:1px solid #999;padding:3px 8px;">ภาษา</th>
+          <th style="border:1px solid #999;padding:3px 8px;">ทักษะ</th>
+          <th style="border:1px solid #999;padding:3px 8px;text-align:center;">พอใช้</th>
+          <th style="border:1px solid #999;padding:3px 8px;text-align:center;">ดี</th>
+          <th style="border:1px solid #999;padding:3px 8px;text-align:center;">ดีมาก</th>
+        </tr>
+        ${(()=>{
+          const rows = def(d.langText).split('\n').filter(r=>r.trim());
+          if(!rows.length) return '<tr><td colspan="5" style="border:1px solid #999;padding:4px;text-align:center;">ไม่ระบุ</td></tr>';
+          return rows.map(r=>{
+            const nm = r.split(':')[0].replace(/^\d+\.\s*/,'').trim();
+            const rest = r.split(':')[1]||'';
+            const getSkill = (label) => { const m=rest.match(new RegExp(label+'\\s+([^/|]+)')); return m?m[1].trim():''; };
+            const skills = [['ฟัง',getSkill('ฟัง')],['พูด',getSkill('พูด')],['อ่าน',getSkill('อ่าน')],['เขียน',getSkill('เขียน')]];
+            return skills.map((sk,si)=>`<tr>
+              ${si===0?`<td rowspan="4" style="border:1px solid #999;padding:3px 8px;vertical-align:middle;">${nm}</td>`:''}
+              <td style="border:1px solid #999;padding:3px 8px;">${sk[0]}</td>
+              <td style="border:1px solid #999;padding:3px 8px;text-align:center;">${sk[1]==='พอใช้'?'✓':''}</td>
+              <td style="border:1px solid #999;padding:3px 8px;text-align:center;">${sk[1]==='ดี'?'✓':''}</td>
+              <td style="border:1px solid #999;padding:3px 8px;text-align:center;">${sk[1]==='ดีมาก'?'✓':''}</td>
+            </tr>`).join('');
+          }).join('');
+        })()}
+      </table>
+      <div class="row">3.2 พิมพ์ดีด
+        ${chk('','x')} ไม่ได้ &nbsp;
+        ได้ ไทย ${dline(def(d.typeThai),'55px')} คำ/นาที &nbsp; อังกฤษ ${dline(def(d.typeEng),'55px')} คำ/นาที
+      </div>
+      <div class="row">3.3 คอมพิวเตอร์
+        ${chk(def(d.computer),'ไม่ได้')} ไม่ได้ &nbsp;
+        ${chk(def(d.computer),'ใช้งานได้')} ใช้งานได้ ระบุโปรแกรม ${dline(def(d.computerPrograms),'140px')} &nbsp;
+        ${chk(def(d.computer),'ใช้งานได้ดี')} ใช้งานได้ดี ระบุโปรแกรม ${dline(def(d.computerPrograms),'80px')}
+      </div>
+      ${def(d.otherSkills)?`<div class="row">– ความรู้ความสามารถพิเศษอื่นๆ ${dline(def(d.otherSkills),'280px')}</div>`:''}
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE 3: ประวัติการทำงาน ============ -->
+<div class="page">
+  <div class="page-num">- 3 -</div>
+
+  <div class="sec">
+    <div class="sec-head">4. ประวัติการทำงาน (เรียงลำดับจากปัจจุบันเป็นต้นไป)</div>
+    <div class="sec-body">
+      <div class="row">4.1 ประสบการณ์การทำงาน (ให้เรียงลำดับการทำงานจากครั้งหลังสุดลงไป)</div>
+      ${expBlock}
+
+      <div class="row" style="margin-top:6px;">
+        4.2 เครื่องราชอิสริยาภรณ์
+        ${chk(def(d.decoration),'ไม่มี')} ไม่มี &nbsp;
+        ${chk(def(d.decoration),'มี')} มี (ระบุ) ${dline(def(d.decorationText),'200px')}
+      </div>
+
+      <div class="row" style="margin-top:6px;">4.3 บุคคลที่สามารถให้การรับรองความประพฤติได้</div>
+      <div class="row">
+        &nbsp;&nbsp; ชื่อ-นามสกุล ${dline(def(d.refName),'160px')}
+        เกี่ยวข้องเป็น ${dline(def(d.refRelation),'110px')}
+        โทรศัพท์ ${dline(def(d.refPhone),'110px')}
+      </div>
+
+      <div class="row" style="margin-top:6px;">4.4 ประวัติเกี่ยวกับการดำเนินการทางวินัยและการดำเนินคดี</div>
+      <div class="row">
+        &nbsp;&nbsp; เคยถูกลงโทษทางวินัย ${chk(def(d.discPast),'ไม่เคย')} ไม่เคย &nbsp;
+        ${chk(def(d.discPast),'เคย')} เคย
+      </div>
+      <div class="row">
+        &nbsp;&nbsp; อยู่ระหว่างถูกสอบสวนข้อเท็จจริง ${chk(def(d.discInvestigate),'ไม่อยู่')} ไม่อยู่ &nbsp;
+        ${chk(def(d.discInvestigate),'อยู่')} อยู่ระหว่าง
+      </div>
+      <div class="row">
+        &nbsp;&nbsp; อยู่ระหว่างถูกดำเนินคดี ${chk(def(d.lawsuit),'ไม่อยู่')} ไม่อยู่ &nbsp;
+        ทางแพ่ง ${chk(def(d.lawsuit),'ทางแพ่ง')} &nbsp;
+        ทางอาญา ${chk(def(d.lawsuit),'ทางอาญา')}
+      </div>
+      ${def(d.discDetail)?`<div class="row">&nbsp;&nbsp; รายละเอียด ${dline(def(d.discDetail),'320px')}</div>`:''}
+    </div>
+  </div>
+
+  ${def(d.specialWorks)?`
+  <div class="sec">
+    <div class="sec-head">5. ผลงานแสดงความรู้ความเชี่ยวชาญที่เกี่ยวข้องกับตำแหน่งที่สมัคร</div>
+    <div class="sec-body">
+      <div class="row">${def(d.specialWorks)}</div>
+    </div>
+  </div>`:''}
+
+  <div class="sec">
+    <div class="sec-head">6. เอกสารประกอบการพิจารณา</div>
+    <div class="sec-body" style="font-size:13pt;">
+      ${[
+        ['1','ใบอนุญาตประกอบวิชาชีพ/ใบประกอบโรคศิลปะ',d.licenseUrl],
+        ['2','สำเนาระเบียนแสดงผลการศึกษา (Transcript)',d.transcriptUrl],
+        ['3','สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา',d.degreeUrl],
+        ['4','สำเนาใบผ่านงาน/หนังสือรับรองการทำงาน',d.workCertUrl],
+        ['5','สำเนาบัตรประจำตัวประชาชน',d.idCardUrl],
+        ['6','สำเนาทะเบียนบ้าน',d.houseRegUrl],
+        ['7','หลักฐานการเปลี่ยนชื่อ-สกุล',d.nameChangeUrl],
+        ['8','ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม',d.medicalUrl],
+        ['9','สำเนาใบผ่านการเกณฑ์ทหาร',d.militaryFileUrl],
+        ['10','รูปถ่าย 1 นิ้ว',d.photoUrl],
+      ].map(([n,label,url])=>`<div style="margin-bottom:3px;">
+        <span style="display:inline-block;width:22px;text-align:right;margin-right:4px;">(${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'✓':'&nbsp;&nbsp;'})</span>
+        (${n}) ${label}
+        ${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'<span style="font-size:11pt;color:green;">จำนวน 1 ฉบับ</span>':'<span style="font-size:11pt;color:#c00;">ยังไม่ได้แนบ</span>'}
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-head">7–8. ประวัติการสมัคร / ความพร้อม</div>
+    <div class="sec-body">
+      <div class="row">เคยสมัครเข้าทำงานในคณะแพทยศาสตร์ มน.
+        ${chk(def(d.prevApplied),'ไม่เคย')} ไม่เคย &nbsp;
+        ${chk(def(d.prevApplied),'เคย')} เคย
+      </div>
+      <div class="row">ความพร้อมในการทำงาน ${dline(def(d.readiness),'250px')}</div>
+    </div>
+  </div>
+
+  <div style="font-size:12pt;margin:10px 0;">
+    การปลอมแปลงเอกสาร เป็นความผิดตามกฎหมาย<br>
+    ขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ
+  </div>
+
+  <div class="sig-wrap">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <div class="sub">(${def(d.title)} ${def(d.name)})</div>
+      <div class="sub">ผู้สมัคร</div>
+      <div class="sub" style="margin-top:6px;">วันที่......เดือน......................พ.ศ..........</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if(!win){ Swal.fire({icon:'warning',text:'กรุณาอนุญาต Pop-up ในเบราว์เซอร์ก่อนพิมพ์'}); return; }
+  win.document.write(printHtml);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 600);
+}
+
+
+// ============================================================
+//  UTILS
+// ============================================================
+function showWarn(msg){ Swal.fire({icon:'warning',text:msg,confirmButtonColor:'#1552a0'}); }
+</script>
+</body>
+</html>
