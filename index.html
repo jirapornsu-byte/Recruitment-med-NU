@@ -1533,6 +1533,12 @@ function printApplication(){
   const def = (v,fb='') => (v&&v.toString().trim()) ? v.toString().trim() : fb;
   const dline = (val, w) => `<span class="dl" style="min-width:${w||'80px'}">${def(val,'')}</span>`;
   const chk = (val, opt) => val===opt ? '<b>(✓)</b>' : '(&nbsp;&nbsp;)';
+  const isAttached = (url) => url && url!=='ไม่ได้แนบเอกสาร' && url!=='อัปโหลดไม่สำเร็จ';
+  // แปลงลิงก์ Google Drive ("...getUrl()") ให้เป็นลิงก์รูปภาพที่แสดงตรงๆ ได้ (สำหรับรูปถ่าย 1 นิ้ว)
+  const driveFileId = (url) => { const m = (url||'').match(/[-\w]{25,}/); return m ? m[0] : ''; };
+  const driveThumb = (url, size) => { const id = driveFileId(url); return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size||300}` : ''; };
+  // ลิงก์เอกสารแนบ — คลิกเปิดไฟล์จริงที่ผู้สมัครอัปโหลดไว้ได้เลย
+  const docLink = (label, url) => isAttached(url) ? `<a href="${url}" target="_blank" style="color:#0645ad;">${label}</a>` : label;
 
   // ----- 4.1 ประสบการณ์ทำงาน: แยกข้อมูลจาก experienceText กลับเป็นรายการสูงสุด 5 ลำดับ
   // เหมือนแบบฟอร์มต้นฉบับ (ช่องว่างเว้นบรรทัดถ้ายังไม่มีข้อมูล)
@@ -1565,11 +1571,14 @@ function printApplication(){
 <head>
 <meta charset="UTF-8">
 <title>ใบสมัครงาน — ${def(d.title)} ${def(d.name)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: A4; margin: 12mm 14mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'TH Sarabun PSK','Sarabun','Prompt',Tahoma,sans-serif;
+    font-family: 'Sarabun', 'TH Sarabun PSK', Tahoma, sans-serif;
     font-size: 14pt; color: #000; background: #fff;
     line-height: 1.45;
   }
@@ -1587,22 +1596,23 @@ function printApplication(){
   .header-wrap { position: relative; text-align: center; padding-right: 90px; margin-bottom: 6px; }
   .header-boxes {
     position: absolute; top: 0; right: 0;
-    border: 1px solid #000; font-size: 11pt; padding: 5px 8px;
+    font-size: 11pt; padding: 5px 8px;
     line-height: 2; text-align: left; min-width: 110px;
   }
-  .header-boxes .hbl { border-bottom: 1px solid #777; display: block; }
   .logo { height: 64px; margin-bottom: 4px; }
   .htitle1 { font-size: 15pt; font-weight: bold; }
   .htitle2 { font-size: 15pt; font-weight: bold; margin-bottom: 4px; }
   .pos-area { position: relative; padding-right: 95px; margin-top: 4px; }
   .photo-box {
     position: absolute; right: 0; top: 0;
-    width: 84px; height: 108px;
+    width: 1in; height: 1in;
     border: 1px solid #000;
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; font-size: 9pt; text-align: center;
     padding: 4px; line-height: 1.4;
+    overflow: hidden;
   }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; }
   .pos-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 3px; }
   .pos-row .plabel { white-space: nowrap; }
   .pos-row .pval { flex: 1; border-bottom: 1px solid #555; font-weight: bold; padding: 0 4px; }
@@ -1644,15 +1654,15 @@ function printApplication(){
       <span class="hbl">รหัสตำแหน่ง${dline('','90px')}</span>
       <span>เลขประจำตัวสอบ${dline('','80px')}</span>
     </div>
-    <img class="logo" src="https://med.nu.ac.th/home/images/logo-mednu.png"
-         onerror="this.src='https://upload.wikimedia.org/wikipedia/th/b/b2/Medicine_Naresuan.png'" alt="MED NU Logo">
+    <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/4/46/MEDNU.jpg"
+         onerror="this.src='https://med.nu.ac.th/home/images/logo-mednu.png'" alt="MED NU Logo">
     <div class="htitle1">คณะแพทยศาสตร์ มหาวิทยาลัยนเรศวร</div>
     <div class="htitle2">ใบสมัครงานเพื่อบรรจุเป็นพนักงานราชการ</div>
   </div>
 
   <div class="pos-area">
     <div class="photo-box">
-      ติดภาพถ่าย<br>ขนาด 1" × 1"<br>สีหรือขาวดำ<br>ใช้กาวเท่านั้น
+      ${driveThumb(d.photoUrl,300) ? `<img src="${driveThumb(d.photoUrl,300)}" alt="รูปถ่ายผู้สมัคร">` : 'ติดภาพถ่าย<br>ขนาด 1" × 1"<br>สีหรือขาวดำ<br>ใช้กาวเท่านั้น'}
     </div>
     <div class="pos-row">
       <span class="plabel">สมัครในตำแหน่ง</span>
@@ -1975,9 +1985,9 @@ function printApplication(){
         ['10','รูปถ่าย 1 นิ้ว จำนวน 1 รูป',d.photoUrl],
         ['11','เอกสารอื่นๆ (ถ้ามี) เช่น ใบทะเบียนสมรส ระบุ ' + (def(d.otherDocDetail)||'—'),d.otherDocUrl],
       ].map(([n,label,url])=>`<div style="margin-bottom:3px;">
-        <span style="display:inline-block;width:22px;text-align:right;margin-right:4px;">(${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'✓':'&nbsp;&nbsp;'})</span>
-        (${n}) ${label}
-        ${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'<span style="font-size:11pt;color:green;">แนบแล้ว</span>':'<span style="font-size:11pt;color:#c00;">ยังไม่ได้แนบ</span>'}
+        <span style="display:inline-block;width:22px;text-align:right;margin-right:4px;">(${isAttached(url)?'✓':'&nbsp;&nbsp;'})</span>
+        (${n}) ${docLink(label,url)}
+        ${isAttached(url)?`<span style="font-size:11pt;"> — <a href="${url}" target="_blank" style="color:green;">📎 เปิดดูไฟล์ที่แนบ</a></span>`:'<span style="font-size:11pt;color:#c00;">ยังไม่ได้แนบ</span>'}
       </div>`).join('')}
     </div>
   </div>
