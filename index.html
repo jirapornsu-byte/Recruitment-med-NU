@@ -321,9 +321,20 @@
     .tag-doc-ok { color: var(--success); font-size: 12px; }
     .tag-doc-miss { color: var(--danger); font-size: 12px; font-weight: 600; }
     .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .share-banner { background:var(--warning-light); border:1px solid #f0d9a8; color:var(--warning); font-weight:600; padding:12px 18px; border-radius:10px; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+    .queue-table { width:100%; border-collapse:collapse; font-size:14px; }
+    .queue-table th { text-align:left; background:#f8fafc; padding:8px 10px; border-bottom:2px solid var(--border); font-size:12px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); }
+    .queue-table td { padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .queue-table tr:hover td { background:#f8fafc; }
+    .status-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; background:var(--blue-light); color:var(--blue); white-space:nowrap; }
+    .status-form .field { margin-bottom:12px; }
   </style>
 </head>
 <body>
+
+<script>
+  var SHARE_TOKEN = <?= JSON.stringify(shareToken || '') ?>;
+</script>
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
@@ -343,6 +354,14 @@
 </header>
 
 <div class="page-wrap">
+  <!-- ========== SHARED READ-ONLY VIEW (เปิดผ่านลิงก์แชร์ ไม่ต้องล็อกอิน) ========== -->
+  <div id="shareView" style="display:none;">
+    <div class="share-banner"><i class="fa-solid fa-eye"></i> มุมมองสำหรับผู้ได้รับลิงก์แชร์ — อ่านอย่างเดียว ไม่สามารถแก้ไขข้อมูลได้</div>
+    <div id="shareStatusBadge" style="margin-bottom:14px;"></div>
+    <div id="shareDataCards"></div>
+  </div>
+
+  <div id="mainAppView">
   <!-- TAB NAV -->
   <nav class="tab-nav">
     <button class="tab-btn active" id="btn-formTab" onclick="switchTab('formTab')">
@@ -745,16 +764,6 @@
     </div>
 
     <div id="resultSection" style="display:none;margin-top:20px;max-width:600px;margin-left:auto;margin-right:auto;">
-      <div class="card card-body status-info" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div>
-          <div class="status-tag tag-teal" style="margin-bottom:6px;">ผู้สมัคร</div>
-          <div style="font-size:21px;font-weight:700;" id="resName">---</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="resAppCount"></div>
-        </div>
-        <i class="fa-solid fa-circle-user" style="font-size:38px;color:var(--teal);opacity:.5;flex-shrink:0;"></i>
-      </div>
-
-      <!-- หนึ่งการ์ดต่อหนึ่งตำแหน่งที่สมัคร (คนหนึ่งอาจสมัครได้หลายตำแหน่ง) -->
       <div id="applicationsContainer"></div>
 
       <div class="card card-body" style="margin-top:16px;">
@@ -795,6 +804,25 @@
     </div>
 
     <div id="staffMainView" style="display:none;">
+
+      <!-- คิวงานผู้สมัคร: ลดการค้นหาทีละคน เห็นภาพรวมและเปิดดูได้ทันที -->
+      <div class="card card-body" style="margin-bottom:20px;">
+        <div class="section-title"><span class="num"><i class="fa-solid fa-list-check" style="font-size:10px;"></i></span> คิวงานผู้สมัคร (ลดการค้นหาทีละคน)</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="queueStatusFilter" onchange="loadQueue()" style="padding:8px 12px;border:1px solid var(--border);border-radius:7px;font-family:'Prompt',sans-serif;font-size:14px;">
+            <option value="">ทุกสถานะ</option>
+          </select>
+          <button onclick="loadQueue()" class="btn btn-secondary"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+          <span id="queueCount" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="queue-table">
+            <thead><tr><th>เลขบัตร</th><th>ชื่อ-นามสกุล</th><th>ตำแหน่ง</th><th>สถานะ</th><th>ส่งเมื่อ</th><th></th></tr></thead>
+            <tbody id="queueTableBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card card-body" style="max-width:560px;margin:0 auto 20px;">
         <div class="section-title"><span class="num"><i class="fa-solid fa-search" style="font-size:10px;"></i></span> ค้นหาข้อมูลผู้สมัคร</div>
         <div style="display:flex;gap:10px;">
@@ -805,17 +833,45 @@
             <i class="fa-solid fa-search"></i> ค้นหา
           </button>
         </div>
+        <div id="staffPositionPicker" style="display:none;margin-top:12px;"></div>
       </div>
 
       <div id="staffResult" style="display:none;">
-        <div id="staffPositionPicker"></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px;">
-          <button onclick="printApplication()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF</button>
+        <div class="card card-body status-form" style="margin-bottom:14px;">
+          <div class="section-title"><span class="num"><i class="fa-solid fa-user-pen" style="font-size:10px;"></i></span> จัดการสถานะใบสมัคร (HR)</div>
+          <div class="form-grid col-2">
+            <div class="field">
+              <label>สถานะการพิจารณา</label>
+              <select id="statusSelect"></select>
+            </div>
+            <div class="field">
+              <label>กำหนดการสอบ/สัมภาษณ์</label>
+              <input type="date" id="statusExamDate">
+            </div>
+            <div class="field">
+              <label>ลิงก์ประกาศผล (ถ้ามี)</label>
+              <input type="text" id="statusAnnouncementUrl" placeholder="https://...">
+            </div>
+            <div class="field">
+              <label>กำหนดส่งเอกสารเพิ่มภายในวันที่</label>
+              <input type="date" id="statusDeadline">
+            </div>
+          </div>
+          <div class="field">
+            <label>เอกสารที่ยังขาด (เลือกได้หลายรายการ)</label>
+            <div id="missingDocsChecklist" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            <button onclick="saveApplicantStatus()" id="btnSaveStatus" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> บันทึกสถานะ</button>
+            <button onclick="shareApplicant()" id="btnShare" class="btn btn-secondary"><i class="fa-solid fa-share-nodes"></i> สร้างลิงก์แชร์ให้ฝ่ายอื่นดู</button>
+            <button onclick="printApplication()" class="btn btn-secondary"><i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF</button>
+          </div>
         </div>
         <div id="staffDataCards"></div>
       </div>
     </div>
   </div>
+  </div><!-- /mainAppView -->
 </div>
 
 <script>
@@ -823,6 +879,30 @@
 //  CONFIG — เปลี่ยน PIN ได้ที่นี่
 // ============================================================
 const STAFF_PIN = '1234';
+
+// ============================================================
+//  SHARED READ-ONLY VIEW (เข้าถึงผ่านลิงก์แชร์ ?share=TOKEN)
+// ============================================================
+(function initShareView(){
+  if(!SHARE_TOKEN) return;
+  document.getElementById('mainAppView').style.display='none';
+  document.getElementById('shareView').style.display='block';
+  google.script.run
+    .withSuccessHandler(res=>{
+      if(!res.success){
+        document.getElementById('shareDataCards').innerHTML = `<div class="card card-body" style="text-align:center;color:var(--danger);">${res.message}</div>`;
+        return;
+      }
+      if(res.shareStatus){
+        document.getElementById('shareStatusBadge').innerHTML = `<span class="status-pill" style="font-size:14px;padding:6px 14px;">สถานะปัจจุบัน: ${res.shareStatus}</span>`;
+      }
+      renderStaffData(res,'shareDataCards');
+    })
+    .withFailureHandler(err=>{
+      document.getElementById('shareDataCards').innerHTML = `<div class="card card-body" style="text-align:center;color:var(--danger);">${err}</div>`;
+    })
+    .getApplicantByShareToken(SHARE_TOKEN);
+})();
 
 // ============================================================
 //  TAB NAVIGATION
@@ -1157,7 +1237,46 @@ function searchStatus(){
       btn.disabled=false;
       if(res.success){
         currentSearchId=id;
-        renderStatusResults(res.name,res.applications);
+        const apps=res.applications||[];
+        document.getElementById('applicationsContainer').innerHTML = apps.map(app=>`
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-body status-info" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div>
+                <div class="status-tag tag-teal" style="margin-bottom:6px;">ผู้สมัคร</div>
+                <div style="font-size:21px;font-weight:700;">${app.name}</div>
+                <div style="font-size:15px;color:var(--muted);margin-top:2px;">${app.position}</div>
+              </div>
+              <i class="fa-solid fa-circle-user" style="font-size:38px;color:var(--teal);opacity:.5;flex-shrink:0;"></i>
+            </div>
+            <div class="card-body" style="padding:16px 20px;border-top:1px solid var(--border);">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                  <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">สถานะการพิจารณา</div>
+                  <div style="font-size:17px;font-weight:700;color:var(--teal);margin-top:3px;">${app.status}</div>
+                </div>
+                <div>
+                  <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">กำหนดการสอบ</div>
+                  <div style="font-size:16px;font-weight:600;margin-top:3px;">${app.examDate}</div>
+                </div>
+              </div>
+              ${app.announcementUrl?`<a href="${app.announcementUrl}" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;"><i class="fa-solid fa-file-pdf"></i> คลิกดูประกาศผลการพิจารณา</a>`:''}
+              ${app.missingDocs&&app.missingDocs.length>0?`
+                <div class="missing-docs-box" style="margin-top:12px;">
+                  <div class="mdtitle"><i class="fa-solid fa-triangle-exclamation"></i> เอกสารยังไม่ครบถ้วน</div>
+                  <ul>${app.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>
+                  <p class="deadline">${app.documentDeadline?`📅 กรุณานำส่งเอกสารเพิ่มเติมภายในวันที่ ${app.documentDeadline}`:''}</p>
+                </div>`:''}
+            </div>
+          </div>`).join('');
+
+        const firstMissing = apps.find(a=>a.missingDocs&&a.missingDocs.length>0);
+        if(firstMissing){
+          Swal.fire({
+            icon:'warning',title:`เอกสารยังไม่ครบถ้วน (${firstMissing.position})`,
+            html:`<div style="text-align:left;font-size:14px;"><p>กรุณาจัดเตรียมและนำส่งเอกสารต่อไปนี้เพิ่มเติม:</p><ul style="padding-left:18px;margin-top:8px;">${firstMissing.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>${firstMissing.documentDeadline?`<p style="margin-top:10px;color:#c0392b;font-weight:700;">📅 กำหนดส่งภายในวันที่ ${firstMissing.documentDeadline}</p>`:''}</div>`,
+            confirmButtonText:'รับทราบ',confirmButtonColor:'#c0392b'
+          });
+        }
         resetSurveyBox();
         document.getElementById('resultSection').style.display='block';
       } else {
@@ -1171,47 +1290,6 @@ function searchStatus(){
       Swal.fire({icon:'error',title:'ดึงข้อมูลไม่สำเร็จ',text:err,confirmButtonColor:'#c0392b'});
     })
     .checkStatus(id);
-}
-
-// แสดงผลลัพธ์การติดตามสถานะ — หนึ่งการ์ดต่อหนึ่งตำแหน่งที่สมัคร (คนหนึ่งสมัครได้หลายตำแหน่ง)
-function renderStatusResults(name,applications){
-  document.getElementById('resName').innerText=name;
-  document.getElementById('resAppCount').innerText = applications.length>1 ? `สมัครทั้งหมด ${applications.length} ตำแหน่ง` : '';
-
-  document.getElementById('applicationsContainer').innerHTML = applications.map(app=>`
-    <div class="card" style="margin-top:12px;">
-      <div class="card-body" style="padding:16px 20px;">
-        <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">ตำแหน่งที่สมัคร</div>
-        <div style="font-size:18px;font-weight:700;margin-bottom:12px;">${app.position}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div>
-            <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">สถานะการพิจารณา</div>
-            <div style="font-size:17px;font-weight:700;color:var(--teal);margin-top:3px;">${app.status}</div>
-          </div>
-          <div>
-            <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">กำหนดการสอบ</div>
-            <div style="font-size:16px;font-weight:600;margin-top:3px;">${app.examDate}</div>
-          </div>
-        </div>
-        ${app.announcementUrl?`<a href="${app.announcementUrl}" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px;"><i class="fa-solid fa-file-pdf"></i> คลิกดูประกาศผลการพิจารณา</a>`:''}
-        ${app.missingDocs&&app.missingDocs.length>0?`
-        <div class="missing-docs-box" style="margin-top:12px;">
-          <div class="mdtitle"><i class="fa-solid fa-triangle-exclamation"></i> เอกสารยังไม่ครบถ้วน</div>
-          <ul>${app.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>
-          ${app.documentDeadline?`<p class="deadline">📅 กรุณานำส่งเอกสารเพิ่มเติมภายในวันที่ ${app.documentDeadline}</p>`:''}
-        </div>`:''}
-      </div>
-    </div>
-  `).join('');
-
-  const withMissing = applications.filter(app=>app.missingDocs&&app.missingDocs.length>0);
-  if(withMissing.length>0){
-    Swal.fire({
-      icon:'warning',title:'เอกสารยังไม่ครบถ้วน',
-      html:`<div style="text-align:left;font-size:14px;">${withMissing.map(app=>`<p><b>${app.position}:</b></p><ul style="padding-left:18px;margin-bottom:8px;">${app.missingDocs.map(d=>`<li>${d}</li>`).join('')}</ul>${app.documentDeadline?`<p style="color:#c0392b;font-weight:700;">📅 กำหนดส่งภายในวันที่ ${app.documentDeadline}</p>`:''}`).join('')}</div>`,
-      confirmButtonText:'รับทราบ',confirmButtonColor:'#c0392b'
-    });
-  }
 }
 
 function submitSurvey(){
@@ -1235,16 +1313,60 @@ function submitSurvey(){
 //  STAFF PANEL
 // ============================================================
 let staffUnlocked=false;
+const MISSING_DOC_OPTIONS=['สำเนาใบอนุญาตประกอบวิชาชีพ/ใบประกอบโรคศิลปะ','สำเนาระเบียนแสดงผลการศึกษา (Transcript)','สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา','สำเนาใบผ่านงาน/หนังสือรับรองการทำงาน','สำเนาบัตรประจำตัวประชาชน','สำเนาทะเบียนบ้าน','หลักฐานการเปลี่ยนชื่อ-สกุล','ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม','สำเนาใบผ่านการเกณฑ์ทหาร','รูปถ่าย 1 นิ้ว'];
+let currentStaffId='', currentStaffPosition='';
+
 function checkPin(){
   if(document.getElementById('staffPin').value===STAFF_PIN){
     staffUnlocked=true;
     document.getElementById('staffPinView').style.display='none';
     document.getElementById('staffMainView').style.display='block';
+    document.getElementById('missingDocsChecklist').innerHTML = MISSING_DOC_OPTIONS.map((d,i)=>`
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;">
+        <input type="checkbox" class="missingDocCk" value="${d}" style="width:15px;height:15px;accent-color:var(--blue);"> ${d}
+      </label>`).join('');
+    loadQueue();
   } else {
     Swal.fire({icon:'error',title:'รหัสผ่านไม่ถูกต้อง',confirmButtonColor:'#c0392b'});
   }
 }
 document.getElementById('staffPin').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPin(); });
+
+// ---- คิวงานผู้สมัคร (แดชบอร์ดรวม ลดการค้นหาทีละคน) ----
+function loadQueue(){
+  const filter=document.getElementById('queueStatusFilter').value;
+  const tbody=document.getElementById('queueTableBody');
+  tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">กำลังโหลด...</td></tr>';
+  google.script.run
+    .withSuccessHandler(res=>{
+      if(!res.success){ tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:16px;">${res.message}</td></tr>`; return; }
+      const sel=document.getElementById('queueStatusFilter');
+      if(sel.options.length<=1){
+        res.statusOptions.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+      }
+      if(document.getElementById('statusSelect').options.length===0){
+        res.statusOptions.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; document.getElementById('statusSelect').appendChild(o); });
+      }
+      document.getElementById('queueCount').innerText=`ทั้งหมด ${res.list.length} รายการ`;
+      if(!res.list.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">ไม่มีข้อมูล</td></tr>'; return; }
+      tbody.innerHTML=res.list.map(a=>`
+        <tr>
+          <td>${a.citizenId}</td>
+          <td>${a.name}</td>
+          <td>${a.position}</td>
+          <td><span class="status-pill">${a.status}</span></td>
+          <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${a.submittedAt}</td>
+          <td><button class="btn btn-secondary" style="padding:6px 12px;font-size:13px;" onclick="openFromQueue('${a.citizenId}','${a.position.replace(/'/g,"\\'")}')"><i class="fa-solid fa-arrow-up-right-from-square"></i> เปิด</button></td>
+        </tr>`).join('');
+    })
+    .withFailureHandler(err=>{ tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:16px;">${err}</td></tr>`; })
+    .getApplicantsQueue(filter);
+}
+function openFromQueue(id,position){
+  document.getElementById('staffSearchId').value=id;
+  document.getElementById('staffPositionPicker').style.display='none';
+  loadApplicant(id,position);
+}
 
 function staffSearch(){
   const id=document.getElementById('staffSearchId').value;
@@ -1256,39 +1378,99 @@ function staffSearch(){
     .withSuccessHandler(res=>{
       btn.innerHTML='<i class="fa-solid fa-search"></i> ค้นหา';
       btn.disabled=false;
-      if(res.success){
-        window.__staffApplications=res.applications;
-        renderStaffPositionPicker(res.applications);
-        renderStaffData(res.applications[0]);
-        document.getElementById('staffResult').style.display='block';
+      if(!res.success){ Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'}); return; }
+      if(res.list.length===1){
+        document.getElementById('staffPositionPicker').style.display='none';
+        loadApplicant(id, res.list[0].position);
+      } else {
+        const picker=document.getElementById('staffPositionPicker');
+        picker.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;">เลขบัตรนี้สมัครมากกว่า 1 ตำแหน่ง กรุณาเลือกใบสมัครที่ต้องการดู:</div>` +
+          res.list.map(app=>`<button type="button" class="btn btn-secondary" style="display:block;width:100%;text-align:left;margin-bottom:6px;" onclick="loadApplicant('${id}','${app.position.replace(/'/g,"\\'")}')">${app.position} <span style="color:var(--muted);font-size:12px;">(${app.department||'-'}, ส่งเมื่อ ${app.submittedAt})</span></button>`).join('');
+        picker.style.display='block';
+        document.getElementById('staffResult').style.display='none';
       }
-      else Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'});
     })
     .withFailureHandler(err=>{
       btn.innerHTML='<i class="fa-solid fa-search"></i> ค้นหา';
       btn.disabled=false;
       Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
     })
-    .getApplicantData(id);
+    .getApplicantPositions(id);
 }
 
-// ถ้าเลขบัตรนี้สมัครมากกว่า 1 ตำแหน่ง ให้แสดง dropdown ให้เจ้าหน้าที่เลือกดูทีละใบสมัคร
-function renderStaffPositionPicker(applications){
-  const picker=document.getElementById('staffPositionPicker');
-  if(applications.length<=1){ picker.style.display='none'; picker.innerHTML=''; return; }
-  picker.style.display='block';
-  picker.innerHTML=`
-    <div class="card card-body" style="margin-bottom:14px;">
-      <div class="field" style="margin:0;">
-        <label>ผู้สมัครนี้สมัครทั้งหมด ${applications.length} ตำแหน่ง — เลือกใบสมัครที่ต้องการดู/พิมพ์</label>
-        <select onchange="renderStaffData(window.__staffApplications[this.value])">
-          ${applications.map((a,i)=>`<option value="${i}">${a.position}${a.department?(' — '+a.department):''}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
+function loadApplicant(id,position){
+  currentStaffId=id; currentStaffPosition=position;
+  document.getElementById('staffPositionPicker').style.display='none';
+  google.script.run
+    .withSuccessHandler(res=>{
+      if(res.success){ renderStaffData(res,'staffDataCards'); document.getElementById('staffResult').style.display='block'; }
+      else Swal.fire({icon:'info',title:'ไม่พบข้อมูล',text:res.message,confirmButtonColor:'#1552a0'});
+    })
+    .withFailureHandler(err=> Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'}))
+    .getApplicantData(id,position);
+
+  google.script.run
+    .withSuccessHandler(res=>{
+      document.getElementById('statusSelect').value = (res.found&&res.status) ? res.status : '⏳ ได้รับใบสมัครแล้ว (รอตรวจสอบเอกสาร)';
+      document.getElementById('statusExamDate').value = res.found ? (res.examDate||'') : '';
+      document.getElementById('statusAnnouncementUrl').value = res.found ? (res.announcementUrl||'') : '';
+      document.getElementById('statusDeadline').value = res.found ? (res.documentDeadline||'') : '';
+      const missing = (res.found && res.missingDocs) ? res.missingDocs : [];
+      document.querySelectorAll('.missingDocCk').forEach(ck=>{ ck.checked = missing.indexOf(ck.value)!==-1; });
+    })
+    .withFailureHandler(()=>{})
+    .getApplicantStatus(id,position);
 }
 
-function renderStaffData(d){
+function saveApplicantStatus(){
+  if(!currentStaffId||!currentStaffPosition){ showWarn('กรุณาค้นหาและเลือกผู้สมัครก่อน'); return; }
+  const d=window.__staffData||{};
+  const missingDocs=[...document.querySelectorAll('.missingDocCk:checked')].map(ck=>ck.value);
+  const btn=document.getElementById('btnSaveStatus');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> กำลังบันทึก...';
+  google.script.run
+    .withSuccessHandler(res=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> บันทึกสถานะ';
+      if(res.success) Swal.fire({icon:'success',title:'บันทึกสถานะเรียบร้อย',timer:1400,showConfirmButton:false});
+      else Swal.fire({icon:'error',title:'บันทึกไม่สำเร็จ',text:res.message,confirmButtonColor:'#c0392b'});
+    })
+    .withFailureHandler(err=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> บันทึกสถานะ';
+      Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
+    })
+    .updateApplicantStatus({
+      citizenId: currentStaffId, position: currentStaffPosition,
+      name: d.name||'', department: d.department||'',
+      status: document.getElementById('statusSelect').value,
+      examDate: document.getElementById('statusExamDate').value,
+      announcementUrl: document.getElementById('statusAnnouncementUrl').value,
+      documentDeadline: document.getElementById('statusDeadline').value,
+      missingDocs: missingDocs
+    });
+}
+
+function shareApplicant(){
+  if(!currentStaffId||!currentStaffPosition){ showWarn('กรุณาค้นหาและเลือกผู้สมัครก่อน'); return; }
+  const btn=document.getElementById('btnShare');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>';
+  google.script.run
+    .withSuccessHandler(res=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-share-nodes"></i> สร้างลิงก์แชร์ให้ฝ่ายอื่นดู';
+      if(!res.success){ Swal.fire({icon:'error',title:'สร้างลิงก์ไม่สำเร็จ',text:res.message,confirmButtonColor:'#c0392b'}); return; }
+      Swal.fire({
+        icon:'success', title:'ลิงก์แชร์พร้อมใช้งาน',
+        html:`<p style="font-size:13px;margin-bottom:8px;">ส่งลิงก์นี้ให้กรรมการ/ฝ่ายอื่นเพื่อเปิดดูข้อมูลผู้สมัคร (อ่านอย่างเดียว ไม่ต้องมีรหัสผ่านเจ้าหน้าที่)</p><input readonly id="shareLinkInput" value="${res.url}" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:12px;" onclick="this.select()">`,
+        confirmButtonText:'ปิด',confirmButtonColor:'#1552a0'
+      });
+    })
+    .withFailureHandler(err=>{
+      btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-share-nodes"></i> สร้างลิงก์แชร์ให้ฝ่ายอื่นดู';
+      Swal.fire({icon:'error',text:err,confirmButtonColor:'#c0392b'});
+    })
+    .createShareLink(currentStaffId, currentStaffPosition);
+}
+
+function renderStaffData(d,targetId){
   window.__staffData=d;
   const card=(title,rows)=>`
     <div class="card" style="margin-bottom:14px;">
@@ -1300,7 +1482,7 @@ function renderStaffData(d){
       </div>
     </div>`;
 
-  document.getElementById('staffDataCards').innerHTML =
+  document.getElementById(targetId).innerHTML =
     card('ข้อมูลการสมัคร',[['ตำแหน่งที่สมัคร',d.position],['หน่วยงาน',d.department]]) +
     card('1. ประวัติส่วนตัว',[
       ['ชื่อ-นามสกุล',`${d.title||''} ${d.name||''}`],['ชื่ออังกฤษ',d.nameEN],['ชื่อเล่น',d.nickname],
@@ -1351,6 +1533,12 @@ function printApplication(){
   const def = (v,fb='') => (v&&v.toString().trim()) ? v.toString().trim() : fb;
   const dline = (val, w) => `<span class="dl" style="min-width:${w||'80px'}">${def(val,'')}</span>`;
   const chk = (val, opt) => val===opt ? '<b>(✓)</b>' : '(&nbsp;&nbsp;)';
+  const isAttached = (url) => url && url!=='ไม่ได้แนบเอกสาร' && url!=='อัปโหลดไม่สำเร็จ';
+  // แปลงลิงก์ Google Drive ("...getUrl()") ให้เป็นลิงก์รูปภาพที่แสดงตรงๆ ได้ (สำหรับรูปถ่าย 1 นิ้ว)
+  const driveFileId = (url) => { const m = (url||'').match(/[-\w]{25,}/); return m ? m[0] : ''; };
+  const driveThumb = (url, size) => { const id = driveFileId(url); return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w${size||300}` : ''; };
+  // ลิงก์เอกสารแนบ — คลิกเปิดไฟล์จริงที่ผู้สมัครอัปโหลดไว้ได้เลย
+  const docLink = (label, url) => isAttached(url) ? `<a href="${url}" target="_blank" style="color:#0645ad;">${label}</a>` : label;
 
   // ----- 4.1 ประสบการณ์ทำงาน: แยกข้อมูลจาก experienceText กลับเป็นรายการสูงสุด 5 ลำดับ
   // เหมือนแบบฟอร์มต้นฉบับ (ช่องว่างเว้นบรรทัดถ้ายังไม่มีข้อมูล)
@@ -1383,11 +1571,14 @@ function printApplication(){
 <head>
 <meta charset="UTF-8">
 <title>ใบสมัครงาน — ${def(d.title)} ${def(d.name)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   @page { size: A4; margin: 12mm 14mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'TH Sarabun PSK','Sarabun','Prompt',Tahoma,sans-serif;
+    font-family: 'Sarabun', 'TH Sarabun PSK', Tahoma, sans-serif;
     font-size: 14pt; color: #000; background: #fff;
     line-height: 1.45;
   }
@@ -1405,22 +1596,23 @@ function printApplication(){
   .header-wrap { position: relative; text-align: center; padding-right: 90px; margin-bottom: 6px; }
   .header-boxes {
     position: absolute; top: 0; right: 0;
-    border: 1px solid #000; font-size: 11pt; padding: 5px 8px;
+    font-size: 11pt; padding: 5px 8px;
     line-height: 2; text-align: left; min-width: 110px;
   }
-  .header-boxes .hbl { border-bottom: 1px solid #777; display: block; }
   .logo { height: 64px; margin-bottom: 4px; }
   .htitle1 { font-size: 15pt; font-weight: bold; }
   .htitle2 { font-size: 15pt; font-weight: bold; margin-bottom: 4px; }
   .pos-area { position: relative; padding-right: 95px; margin-top: 4px; }
   .photo-box {
     position: absolute; right: 0; top: 0;
-    width: 84px; height: 108px;
+    width: 1in; height: 1in;
     border: 1px solid #000;
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; font-size: 9pt; text-align: center;
     padding: 4px; line-height: 1.4;
+    overflow: hidden;
   }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; }
   .pos-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 3px; }
   .pos-row .plabel { white-space: nowrap; }
   .pos-row .pval { flex: 1; border-bottom: 1px solid #555; font-weight: bold; padding: 0 4px; }
@@ -1462,15 +1654,15 @@ function printApplication(){
       <span class="hbl">รหัสตำแหน่ง${dline('','90px')}</span>
       <span>เลขประจำตัวสอบ${dline('','80px')}</span>
     </div>
-    <img class="logo" src="https://med.nu.ac.th/home/images/logo-mednu.png"
-         onerror="this.src='https://upload.wikimedia.org/wikipedia/th/b/b2/Medicine_Naresuan.png'" alt="MED NU Logo">
+    <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/4/46/MEDNU.jpg"
+         onerror="this.src='https://med.nu.ac.th/home/images/logo-mednu.png'" alt="MED NU Logo">
     <div class="htitle1">คณะแพทยศาสตร์ มหาวิทยาลัยนเรศวร</div>
-    <div class="htitle2">ใบสมัครงานเพื่อบรรจุเป็นพนักงานมหาวิทยาลัยนเรศวร</div>
+    <div class="htitle2">ใบสมัครงานเพื่อบรรจุเป็นพนักงานราชการ</div>
   </div>
 
   <div class="pos-area">
     <div class="photo-box">
-      ติดภาพถ่าย<br>ขนาด 1" × 1"<br>สีหรือขาวดำ<br>ใช้การเท่านั้น
+      ${driveThumb(d.photoUrl,300) ? `<img src="${driveThumb(d.photoUrl,300)}" alt="รูปถ่ายผู้สมัคร">` : 'ติดภาพถ่าย<br>ขนาด 1" × 1"<br>สีหรือขาวดำ<br>ใช้กาวเท่านั้น'}
     </div>
     <div class="pos-row">
       <span class="plabel">สมัครในตำแหน่ง</span>
@@ -1538,10 +1730,12 @@ function printApplication(){
 
       <div class="row" style="margin-top:4px;">
         1.4 สถานภาพทางทหาร &nbsp;
-        ${chk(def(d.militaryStatus),'ได้รับการยกเว้น')} ได้รับการยกเว้น &nbsp;
-        ${chk(def(d.militaryStatus),'ปลดเป็นทหารกองหนุน')} ปลดเป็นทหารกองหนุน &nbsp;
-        ${chk(def(d.militaryStatus),'จะเข้ารับการเกณฑ์ทหาร')} จะเข้ารับการเกณฑ์ทหาร &nbsp;
-        ${chk(def(d.militaryStatus),'ไม่ระบุ/หญิง')} ไม่ระบุ/หญิง
+        ${chk(def(d.militaryStatus),'ได้รับการยกเว้น')} ได้รับการยกเว้น เนื่องจาก ${dline(def(d.militaryStatus)==='ได้รับการยกเว้น'?def(d.militaryYear):'','140px')}
+      </div>
+      <div class="row">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        ${chk(def(d.militaryStatus),'ปลดเป็นทหารกองหนุน')} ปลดเป็นทหารกองหนุน พ.ศ. ${dline(def(d.militaryStatus)==='ปลดเป็นทหารกองหนุน'?def(d.militaryYear):'','70px')} &nbsp;
+        ${chk(def(d.militaryStatus),'จะเข้ารับการเกณฑ์ทหาร')} จะเข้ารับการเกณฑ์ พ.ศ. ${dline(def(d.militaryStatus)==='จะเข้ารับการเกณฑ์ทหาร'?def(d.militaryYear):'','70px')}
       </div>
 
       <div class="row">
@@ -1711,13 +1905,24 @@ function printApplication(){
       <div class="row">4.1 ประสบการณ์การทำงาน (ให้เรียงลำดับการทำงานจากครั้งหลังสุดลงไป)</div>
       ${expBlock}
 
-      <div class="row" style="margin-top:6px;">
-        4.2 เครื่องราชอิสริยาภรณ์
+      <div class="row" style="margin-top:6px;">4.2 ประวัติการได้รับพระราชทานเครื่องราชอิสริยาภรณ์
         ${chk(def(d.decoration),'ไม่มี')} ไม่มี &nbsp;
-        ${chk(def(d.decoration),'มี')} มี (ระบุ) ${dline(def(d.decorationText),'200px')}
+        ${chk(def(d.decoration),'มี')} มี
       </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11pt;margin:4px 0 6px;">
+        <tr style="background:#f2f2f2;">
+          <th style="border:1px solid #999;padding:2px 6px;">เครื่องราชอิสริยาภรณ์</th>
+          <th style="border:1px solid #999;padding:2px 6px;width:80px;">ปี พ.ศ.ที่ได้รับ</th>
+          <th style="border:1px solid #999;padding:2px 6px;width:90px;">จากหน่วยงาน</th>
+          <th style="border:1px solid #999;padding:2px 6px;width:90px;">ประกาศในราชกิจจาฯ ฉบับที่</th>
+        </tr>
+        ${['มหาปรมาภรณ์ช้างเผือก (ม.ป.ช.)','มหาวชิรมงกุฎ (ม.ว.ม.)','ประถมาภรณ์ช้างเผือก (ป.ช.)','ประถมาภรณ์มงกุฎไทย (ป.ม.)','ทวีติยาภรณ์ช้างเผือก (ท.ช.)','ทวีติยาภรณ์มงกุฎไทย (ท.ม.)','ตริตาภรณ์ช้างเผือก (ต.ช.)','ตริตาภรณ์มงกุฎไทย (ต.ม.)','จัตุรถาภรณ์ช้างเผือก (จ.ช.)','จัตุรถาภรณ์มงกุฎไทย (จ.ม.)','เบญจมาภรณ์ช้างเผือก (บ.ช.)','เบญจมาภรณ์มงกุฎไทย (บ.ม.)']
+          .map(m=>`<tr><td style="border:1px solid #999;padding:2px 6px;">${m}</td><td style="border:1px solid #999;"></td><td style="border:1px solid #999;"></td><td style="border:1px solid #999;"></td></tr>`).join('')}
+      </table>
+      ${def(d.decorationText)?`<div class="row">รายละเอียดที่ผู้สมัครระบุ: ${dline(def(d.decorationText),'280px')}</div>`:''}
 
-      <div class="row" style="margin-top:6px;">4.3 บุคคลที่สามารถให้การรับรองความประพฤติได้</div>
+      <div class="row" style="margin-top:8px;">4.3 บุคคลที่สามารถให้การรับรองความประพฤติได้</div>
+      <div class="row" style="font-size:11pt;color:#333;">(ต้องเป็นบุคคลที่ไม่ใช่ญาติพี่น้องหรือเพื่อน ตัวอย่างเช่น อาจารย์ที่ปรึกษา, ผู้บังคับบัญชาหน่วยงานเดิม, กำนัน, ผู้ใหญ่บ้าน)</div>
       <div class="row">
         &nbsp;&nbsp; ชื่อ-นามสกุล ${dline(def(d.refName),'160px')}
         เกี่ยวข้องเป็น ${dline(def(d.refRelation),'110px')}
@@ -1726,64 +1931,94 @@ function printApplication(){
 
       <div class="row" style="margin-top:6px;">4.4 ประวัติเกี่ยวกับการดำเนินการทางวินัยและการดำเนินคดี</div>
       <div class="row">
-        &nbsp;&nbsp; เคยถูกลงโทษทางวินัย ${chk(def(d.discPast),'ไม่เคย')} ไม่เคย &nbsp;
-        ${chk(def(d.discPast),'เคย')} เคย
+        &nbsp;&nbsp; ${chk(def(d.discPast),'ไม่เคย')} ไม่เคย &nbsp;
+        ${chk(def(d.discPast),'เคย')} เคยต้องโทษทางวินัย (โปรดระบุ) ${dline(def(d.discPast)==='เคย'?def(d.discDetail):'','180px')}
       </div>
       <div class="row">
-        &nbsp;&nbsp; อยู่ระหว่างถูกสอบสวนข้อเท็จจริง ${chk(def(d.discInvestigate),'ไม่อยู่')} ไม่อยู่ &nbsp;
-        ${chk(def(d.discInvestigate),'อยู่')} อยู่ระหว่าง
+        &nbsp;&nbsp; ${chk(def(d.discInvestigate),'ไม่อยู่')} ไม่อยู่ &nbsp;
+        ${chk(def(d.discInvestigate),'อยู่')} อยู่ในระหว่างถูกสอบข้อเท็จจริงเพื่อดำเนินการทางวินัย
       </div>
       <div class="row">
-        &nbsp;&nbsp; อยู่ระหว่างถูกดำเนินคดี ${chk(def(d.lawsuit),'ไม่อยู่')} ไม่อยู่ &nbsp;
+        &nbsp;&nbsp; ${chk(def(d.discCommittee),'ไม่อยู่')} ไม่อยู่ &nbsp;
+        ${chk(def(d.discCommittee),'อยู่')} อยู่ในระหว่างถูกตั้งกรรมการสอบสวนหรือพิจารณาโทษทางวินัย
+      </div>
+      <div class="row">
+        &nbsp;&nbsp; ${chk(def(d.lawsuit),'ไม่อยู่')} ไม่อยู่ในระหว่างถูกดำเนินคดีทางแพ่ง ทางอาญา หรือคดีล้มละลาย
+      </div>
+      <div class="row">
+        &nbsp;&nbsp; ${def(d.lawsuit)&&def(d.lawsuit)!=='ไม่อยู่'?'<b>(✓)</b>':'(&nbsp;&nbsp;)'} อยู่ในระหว่างถูกดำเนินคดี &nbsp;
         ทางแพ่ง ${chk(def(d.lawsuit),'ทางแพ่ง')} &nbsp;
-        ทางอาญา ${chk(def(d.lawsuit),'ทางอาญา')}
+        ทางอาญา ${chk(def(d.lawsuit),'ทางอาญา')} &nbsp;
+        คดีล้มละลาย ${chk(def(d.lawsuit),'คดีล้มละลาย')}
       </div>
-      ${def(d.discDetail)?`<div class="row">&nbsp;&nbsp; รายละเอียด ${dline(def(d.discDetail),'320px')}</div>`:''}
+      <div class="row">&nbsp;&nbsp; อยู่ในขั้นตอนใด (พนักงานสอบสวน/พนักงานอัยการ/ศาล) ${dline(def(d.lawsuitStage),'220px')}</div>
+      <div class="row">&nbsp;&nbsp; ข้อกล่าวหา ${dline(def(d.discDetail),'320px')}</div>
     </div>
   </div>
+</div>
 
-  ${def(d.specialWorks)?`
+<!-- ============ PAGE 4: ผลงาน / เอกสาร / ประวัติการสมัคร / ความพร้อม ============ -->
+<div class="page">
+  <div class="page-num">- 4 -</div>
+
   <div class="sec">
-    <div class="sec-head">5. ผลงานแสดงความรู้ความเชี่ยวชาญที่เกี่ยวข้องกับตำแหน่งที่สมัคร</div>
-    <div class="sec-body">
+    <div class="sec-head">5. ผลงานแสดงความรู้ความเชี่ยวชาญที่เกี่ยวข้องกับตำแหน่งที่สมัคร หรืออื่นๆ (ถ้ามี)</div>
+    <div class="sec-body" style="min-height:60px;">
       <div class="row">${def(d.specialWorks)}</div>
     </div>
-  </div>`:''}
+  </div>
 
   <div class="sec">
     <div class="sec-head">6. เอกสารประกอบการพิจารณา</div>
     <div class="sec-body" style="font-size:13pt;">
+      <div style="font-size:11pt;margin-bottom:4px;">ข้าพเจ้าได้แนบเอกสาร/หลักฐานที่ลงลายมือชื่อรับรองสำเนาถูกต้องมาพร้อมกับแบบแสดงความประสงค์ขอสมัครเป็นพนักงานราชการ (เงินรายได้) ดังนี้</div>
       ${[
-        ['1','ใบอนุญาตประกอบวิชาชีพ/ใบประกอบโรคศิลปะ',d.licenseUrl],
-        ['2','สำเนาระเบียนแสดงผลการศึกษา (Transcript)',d.transcriptUrl],
-        ['3','สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา',d.degreeUrl],
-        ['4','สำเนาใบผ่านงาน/หนังสือรับรองการทำงาน',d.workCertUrl],
-        ['5','สำเนาบัตรประจำตัวประชาชน',d.idCardUrl],
-        ['6','สำเนาทะเบียนบ้าน',d.houseRegUrl],
-        ['7','หลักฐานการเปลี่ยนชื่อ-สกุล',d.nameChangeUrl],
-        ['8','ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม',d.medicalUrl],
-        ['9','สำเนาใบผ่านการเกณฑ์ทหาร',d.militaryFileUrl],
-        ['10','รูปถ่าย 1 นิ้ว',d.photoUrl],
+        ['1','สำเนาใบอนุญาตเป็นผู้ประกอบวิชาชีพหรือใบอนุญาตเป็นผู้ประกอบโรคศิลปะ จำนวน 1 ฉบับ',d.licenseUrl],
+        ['2','สำเนาระเบียนแสดงผลการศึกษา (Transcript) จำนวน 1 ฉบับ',d.transcriptUrl],
+        ['3','สำเนาใบปริญญาบัตร/หนังสือรับรองวุฒิการศึกษา จำนวน 1 ฉบับ',d.degreeUrl],
+        ['4','สำเนาใบผ่านงาน/หนังสือรับรองการทำงาน จำนวน 1 ฉบับ',d.workCertUrl],
+        ['5','สำเนาบัตรประจำตัวประชาชน จำนวน 1 ฉบับ',d.idCardUrl],
+        ['6','สำเนาทะเบียนบ้าน จำนวน 1 ฉบับ',d.houseRegUrl],
+        ['7','หลักฐานการเปลี่ยนชื่อ-สกุล (ถ้ามี) จำนวน 1 ฉบับ',d.nameChangeUrl],
+        ['8','ใบรับรองแพทย์แผนปัจจุบันสาขาเวชกรรม จำนวน 1 ฉบับ',d.medicalUrl],
+        ['9','สำเนาใบผ่านการเกณฑ์ทหาร (กรณีเพศชาย) จำนวน 1 ฉบับ',d.militaryFileUrl],
+        ['10','รูปถ่าย 1 นิ้ว จำนวน 1 รูป',d.photoUrl],
+        ['11','เอกสารอื่นๆ (ถ้ามี) เช่น ใบทะเบียนสมรส ระบุ ' + (def(d.otherDocDetail)||'—'),d.otherDocUrl],
       ].map(([n,label,url])=>`<div style="margin-bottom:3px;">
-        <span style="display:inline-block;width:22px;text-align:right;margin-right:4px;">(${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'✓':'&nbsp;&nbsp;'})</span>
-        (${n}) ${label}
-        ${url&&url!=='ไม่ได้แนบเอกสาร'&&url!=='อัปโหลดไม่สำเร็จ'?'<span style="font-size:11pt;color:green;">จำนวน 1 ฉบับ</span>':'<span style="font-size:11pt;color:#c00;">ยังไม่ได้แนบ</span>'}
+        <span style="display:inline-block;width:22px;text-align:right;margin-right:4px;">(${isAttached(url)?'✓':'&nbsp;&nbsp;'})</span>
+        (${n}) ${docLink(label,url)}
+        ${isAttached(url)?`<span style="font-size:11pt;"> — <a href="${url}" target="_blank" style="color:green;">📎 เปิดดูไฟล์ที่แนบ</a></span>`:'<span style="font-size:11pt;color:#c00;">ยังไม่ได้แนบ</span>'}
       </div>`).join('')}
     </div>
   </div>
 
   <div class="sec">
-    <div class="sec-head">7–8. ประวัติการสมัคร / ความพร้อม</div>
+    <div class="sec-head">7. ท่านเคยสมัครเข้าทำงานในคณะแพทยศาสตร์ มหาวิทยาลัยนเรศวร หรือไม่</div>
     <div class="sec-body">
-      <div class="row">เคยสมัครเข้าทำงานในคณะแพทยศาสตร์ มน.
-        ${chk(def(d.prevApplied),'ไม่เคย')} ไม่เคย &nbsp;
+      <div class="row">
+        ${chk(def(d.prevApplied),'ไม่เคย')} ไม่เคย &nbsp;&nbsp;
         ${chk(def(d.prevApplied),'เคย')} เคย
+        ${def(d.prevApplied)==='เคย'?` (ครั้งนี้เป็นครั้งที่ ${dline(def(d.prevAppliedTimes),'40px')})`:''}
       </div>
-      <div class="row">ความพร้อมในการทำงาน ${dline(def(d.readiness),'250px')}</div>
+      ${def(d.prevApplied)==='เคย'?(()=>{
+        const rows = def(d.prevAppliedText).split('\n').map(r=>r.trim()).filter(r=>r);
+        if(!rows.length) return '<div class="row">1. ตำแหน่ง ' + dline('','200px') + ' หน่วยงาน ' + dline('','200px') + '</div>';
+        return rows.map((r,i)=>`<div class="row">${i+1}. ตำแหน่ง ${dline(r,'260px')} หน่วยงาน ${dline('','160px')}</div>`).join('');
+      })():''}
     </div>
   </div>
 
-  <div style="font-size:12pt;margin:10px 0;">
+  <div class="sec">
+    <div class="sec-head">8. ถ้าท่านได้รับการคัดเลือกเข้ามาทำงาน ความพร้อมในการทำงานและเงินเดือนที่ต้องการ</div>
+    <div class="sec-body">
+      <div class="row">${chk(def(d.readiness),'พร้อมทำงานทันที')} พร้อมที่จะมาปฏิบัติงานในโรงพยาบาลมหาวิทยาลัยนเรศวรได้ทันที</div>
+      <div class="row">${chk(def(d.readiness),'มีข้อผูกพัน')} มีข้อผูกพันต้องทำงานที่เดิมจนถึงวันที่ ${dline(def(d.readiness)==='มีข้อผูกพัน'?def(d.readinessDate):'','160px')}</div>
+      <div class="row">เงินเดือนที่ต้องการ เดือนละ ${dline(def(d.expectedSalary),'100px')} บาท</div>
+      ${def(d.readinessOther)?`<div class="row">อื่น ๆ (โปรดระบุ) ${dline(def(d.readinessOther),'260px')}</div>`:''}
+    </div>
+  </div>
+
+  <div style="font-size:12pt;margin:10px 0;text-align:center;font-weight:bold;">
     การปลอมแปลงเอกสาร เป็นความผิดตามกฎหมาย<br>
     ขอรับรองว่าข้อความข้างต้นเป็นความจริงทุกประการ
   </div>
@@ -1795,6 +2030,33 @@ function printApplication(){
       <div class="sub">ผู้สมัคร</div>
       <div class="sub" style="margin-top:6px;">วันที่......เดือน......................พ.ศ..........</div>
     </div>
+  </div>
+</div>
+
+<!-- ============ PAGE 5: ความเห็นของเจ้าหน้าที่ผู้รับสมัคร ============ -->
+<div class="page">
+  <div class="page-num">- 5 -</div>
+  <div class="sec">
+    <div class="sec-head">ความเห็นของเจ้าหน้าที่ผู้รับสมัคร</div>
+    <div class="sec-body" style="min-height:160px;">
+      <div class="row">(&nbsp;&nbsp;) รับสมัครเอกสารครบถ้วนสมบูรณ์</div>
+      <div class="row">(&nbsp;&nbsp;) ไม่รับสมัคร เนื่องจาก ${dline('','320px')}</div>
+      <div class="row">(&nbsp;&nbsp;) รับสมัคร โดยมีเงื่อนไข ${dline('','320px')}</div>
+      <div class="row">(&nbsp;&nbsp;) อื่น ๆ ${dline('','320px')}</div>
+    </div>
+  </div>
+
+  <div class="sig-wrap">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <div class="sub">(&nbsp;)</div>
+      <div class="sub">เจ้าหน้าที่ผู้รับสมัคร</div>
+      <div class="sub" style="margin-top:6px;">วันที่......เดือน......................พ.ศ..........</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;font-size:11pt;border-top:1px solid #000;margin-top:40px;padding-top:8px;">
+    99 หมู่ 9 ถนนพิษณุโลก–นครสวรรค์ ตำบลท่าโพธิ์ อำเภอเมือง จังหวัดพิษณุโลก 65000 โทร. 0 5596 7939 โทรสาร 0 5596 7931
   </div>
 </div>
 
