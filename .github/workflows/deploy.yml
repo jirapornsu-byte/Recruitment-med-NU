@@ -1,0 +1,44 @@
+name: Deploy to Google Apps Script
+
+# ทุกครั้งที่มีการ push เข้า main (Code.gs / index.html / appsscript.json เปลี่ยน)
+# workflow นี้จะ push โค้ดขึ้น Apps Script และอัปเดต deployment ของเว็บแอปเดิมให้อัตโนมัติ
+# ไม่ต้องเข้าไป copy-paste ใน Apps Script Editor เองอีกต่อไป
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Code.gs'
+      - 'index.html'
+      - 'appsscript.json'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp@2
+
+      - name: Configure clasp credentials
+        env:
+          CLASP_CREDENTIALS: ${{ secrets.CLASP_CREDENTIALS }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          echo "$CLASP_CREDENTIALS" > "$HOME/.clasprc.json"
+          echo "{\"scriptId\":\"$SCRIPT_ID\",\"rootDir\":\".\"}" > .clasp.json
+
+      - name: Push source to Apps Script
+        run: clasp push -f
+
+      - name: Update existing web app deployment
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: clasp deploy -i "$DEPLOYMENT_ID" -d "Auto-deploy from GitHub Actions (${{ github.sha }})"
